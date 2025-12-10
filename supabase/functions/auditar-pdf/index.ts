@@ -2744,6 +2744,9 @@ Deno.serve(async (req: Request) => {
     const doctores = extraerDoctores(pdfText);
     const resultadosFoja = analizarFojaQuirurgica(pdfText);
 
+    // ===== NUEVO: Extraer estudios =====
+    const estudiosDetectados = extraerEstudios(pdfText);
+
     // Validar equipo quirúrgico único para cada foja
     for (const foja of resultadosFoja.fojas) {
       const erroresEquipoUnico = validarEquipoQuirurgicoUnico(foja);
@@ -2820,8 +2823,7 @@ Deno.serve(async (req: Request) => {
       fechaAlta,
       diasConEvolucion,
       resultadosFoja,
-      estudios,
-      datosPaciente.estaEnUCI
+      estudiosDetectados
     );
 
     const resultado = {
