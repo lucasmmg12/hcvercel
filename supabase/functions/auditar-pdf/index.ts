@@ -761,75 +761,182 @@ function verificarEpicrisis(texto: string): string[] {
 
 /* =========================
    NUEVO: Terapia Intensiva/Intermedia
+   Criterios basados en normativa médica oficial
    ========================= */
+
+// Criterios MAYORES - Requieren UTI (Terapia Intensiva)
 const PATRONES_CRITERIOS_MAYORES: Record<string, RegExp[]> = {
-  ventilacion_mecanica: [
-    /ventilaci[oó]n\s+mec[aá]nica/i,
-    /\bARM\b/i,
-    /\bIOT\b/i,
+  // 1. INSUFICIENCIA RESPIRATORIA AGUDA
+  ventilacion_mecanica_invasiva: [
+    /ventilaci[oó]n\s+mec[aá]nica\s+invasiva/i,
+    /\bVMI\b/i,
+    /\bARM\b/i,  // Asistencia Respiratoria Mecánica
+    /\bIOT\b/i,  // Intubación Orotraqueal
     /intubado/i,
     /tubo\s+endotraqueal/i,
-    /ventilador/i
   ],
-  shock: [
-    /shock\s+(s[eé]ptico|cardiog[eé]nico|hipovolémico|distributivo)/i,
-    /hipotensi[oó]n\s+severa/i,
-    /PAM\s*[<≤]\s*65/i
-  ],
-  insuf_respiratoria: [
+  insuficiencia_respiratoria_grave: [
     /insuficiencia\s+respiratoria\s+aguda/i,
     /IRA\s+grave/i,
-    /PaO2\/FiO2\s*[<≤]\s*200/i,
-    /hipoxemia\s+severa/i
+    /hipoxemia\s+severa/i,
+    /hipercapnia/i,
+    /agotamiento\s+respiratorio/i,
+    /obstrucci[oó]n\s+grave\s+v[ií]a\s+a[eé]rea/i,
   ],
-  coma: [
-    /\bcoma\b/i,
-    /Glasgow\s*[≤<]\s*8/i,
-    /GCS\s*[≤<]\s*8/i
+  asma_epoc_grave: [
+    /asma\s+grave/i,
+    /EPOC\s+grave/i,
+    /exacerbaci[oó]n\s+severa/i,
+    /status\s+asm[aá]tico/i,
   ],
-  sepsis: [
-    /sepsis\s+grave/i,
-    /shock\s+s[eé]ptico/i,
-    /sepsis\s+severa/i
-  ],
-  dialisis: [
-    /di[aá]lisis/i,
-    /hemodi[aá]lisis/i,
-    /terapia\s+de\s+reemplazo\s+renal/i,
-    /\bTRR\b/i
-  ]
-};
 
-const PATRONES_CRITERIOS_MENORES: Record<string, RegExp[]> = {
-  monitoreo_invasivo: [
-    /cat[eé]ter\s+arterial/i,
-    /Swan-Ganz/i,
-    /\bPVC\b/i,
-    /monitoreo\s+hemodin[aá]mico\s+invasivo/i
+  // 2. INESTABILIDAD HEMODINÁMICA / SHOCK
+  shock: [
+    /shock\s+(s[eé]ptico|cardiog[eé]nico|hipovolémico|obstructivo|anafiláctico)/i,
+    /fallo\s+circulatorio/i,
+    /colapso\s+hemodin[aá]mico/i,
   ],
-  soporte_vasopresor: [
+  drogas_vasoactivas: [
     /noradrenalina/i,
+    /adrenalina/i,
     /dopamina/i,
+    /dobutamina/i,
     /vasopresina/i,
     /drogas\s+vasoactivas/i,
-    /inotr[oó]picos/i
+    /vasopresores/i,
+    /inotr[oó]picos/i,
   ],
+  arritmias_graves: [
+    /arritmia\s+grave/i,
+    /compromiso\s+hemodin[aá]mico/i,
+    /fibrilaci[oó]n\s+ventricular/i,
+    /taquicardia\s+ventricular/i,
+    /bradicardia\s+severa/i,
+  ],
+  insuficiencia_cardiaca_aguda: [
+    /insuficiencia\s+card[ií]aca\s+aguda/i,
+    /edema\s+pulmonar/i,
+    /bajo\s+gasto\s+card[ií]aco/i,
+  ],
+
+  // 3. DETERIORO NEUROLÓGICO AGUDO
+  deterioro_conciencia: [
+    /alteraci[oó]n\s+aguda\s+conciencia/i,
+    /Glasgow\s*[≤<]\s*8/i,
+    /GCS\s*[≤<]\s*8/i,
+    /\bcoma\b/i,
+    /deterioro\s+r[aá]pido/i,
+  ],
+  status_epileptico: [
+    /status\s+epil[eé]ptico/i,
+    /convulsiones\s+prolongadas/i,
+    /crisis\s+convulsivas\s+refractarias/i,
+  ],
+  acv_grave: [
+    /ACV\s+agudo/i,
+    /accidente\s+cerebrovascular/i,
+    /riesgo\s+de\s+herniaci[oó]n/i,
+    /compromiso\s+v[ií]a\s+a[eé]rea/i,
+  ],
+  hipertension_intracraneal: [
+    /aumento\s+presi[oó]n\s+intracraneal/i,
+    /hipertensi[oó]n\s+endocraneana/i,
+    /\bPIC\s+elevada/i,
+  ],
+
+  // 4. FALLO RENAL AGUDO GRAVE
+  dialisis_urgencia: [
+    /di[aá]lisis\s+de\s+urgencia/i,
+    /hemodi[aá]lisis/i,
+    /terapia\s+de\s+reemplazo\s+renal/i,
+    /\bTRR\b/i,
+    /sobrecarga\s+de\s+volumen/i,
+    /hiperkalemia\s+severa/i,
+    /acidosis\s+metab[oó]lica\s+severa/i,
+  ],
+
+  // 5. DISFUNCIÓN METABÓLICA/ENDOCRINA GRAVE
+  cetoacidosis_diabetica: [
+    /cetoacidosis\s+diab[eé]tica/i,
+    /\bCAD\b/i,
+    /estado\s+hiperosmolar/i,
+    /acidosis\s+severa/i,
+  ],
+  alteraciones_electroliticas: [
+    /hiperkalemia\s+severa/i,
+    /hiponatremia\s+severa/i,
+    /alteraciones\s+electrol[ií]ticas\s+extremas/i,
+    /riesgo\s+de\s+arritmias/i,
+  ],
+
+  // 6. INSUFICIENCIA HEPÁTICA GRAVE
+  insuficiencia_hepatica: [
+    /insuficiencia\s+hep[aá]tica\s+aguda/i,
+    /falla\s+hep[aá]tica\s+fulminante/i,
+    /encefalopat[ií]a\s+hep[aá]tica/i,
+  ],
+};
+
+// Criterios MENORES - Pueden requerir Terapia Intermedia o monitorización intensiva
+const PATRONES_CRITERIOS_MENORES: Record<string, RegExp[]> = {
+  // MONITORIZACIÓN INTENSIVA
+  monitorizacion_invasiva: [
+    /cat[eé]ter\s+arterial/i,
+    /l[ií]nea\s+arterial/i,
+    /cat[eé]ter\s+venoso\s+central/i,
+    /\bCVC\b/i,
+    /Swan-Ganz/i,
+    /monitoreo\s+PIC/i,
+    /monitoreo\s+hemodin[aá]mico\s+invasivo/i,
+  ],
+
+  // VENTILACIÓN NO INVASIVA
   vmni: [
+    /ventilaci[oó]n\s+no\s+invasiva/i,
+    /\bVMNI\b/i,
     /\bCPAP\b/i,
     /\bBiPAP\b/i,
-    /ventilaci[oó]n\s+no\s+invasiva/i,
-    /\bVMNI\b/i
+    /c[aá]nula\s+de\s+alto\s+flujo/i,
   ],
-  arritmias: [
-    /arritmia/i,
-    /fibrilaci[oó]n/i,
-    /taquicardia\s+ventricular/i
-  ],
-  postoperatorio: [
+
+  // POST-OPERATORIO DE ALTO RIESGO
+  postoperatorio_alto_riesgo: [
+    /postoperatorio\s+cirug[ií]a\s+card[ií]aca/i,
+    /post\s+neurocirug[ií]a/i,
+    /cirug[ií]a\s+grandes\s+vasos/i,
+    /trasplante/i,
     /postoperatorio\s+inmediato/i,
-    /post[-\s]?quir[uú]rgico/i,
-    /cirug[ií]a\s+mayor/i
-  ]
+    /cirug[ií]a\s+mayor/i,
+  ],
+
+  // POLITRAUMATISMO
+  politraumatismo: [
+    /politraumatismo/i,
+    /trauma\s+grave/i,
+    /m[uú]ltiples\s+lesiones/i,
+    /TCE\s+grave/i,  // Traumatismo Craneoencefálico
+  ],
+
+  // QUEMADURAS GRAVES
+  quemaduras: [
+    /grandes\s+quemados/i,
+    /quemaduras\s+extensas/i,
+    /quemaduras\s+graves/i,
+  ],
+
+  // INTOXICACIONES
+  intoxicacion_grave: [
+    /intoxicaci[oó]n\s+grave/i,
+    /sobredosis/i,
+    /riesgo\s+vital/i,
+  ],
+
+  // SEPSIS (sin shock)
+  sepsis_sin_shock: [
+    /sepsis(?!\\s+grave|\\s+severa|\\s+shock)/i,
+    /riesgo\s+de\s+shock\s+s[eé]ptico/i,
+    /infecci[oó]n\s+grave/i,
+  ],
 };
 
 function evaluarCriteriosTerapia(texto: string): {
