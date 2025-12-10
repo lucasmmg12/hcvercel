@@ -221,7 +221,7 @@ export function InformeAuditoria({ resultado, auditoriaId }: { resultado: Result
           </div>
 
           {/* Datos del Paciente */}
-          <CollapsibleSection title="Datos del Paciente" icon={User}>
+          <CollapsibleSection title="Datos del Paciente" icon={User} defaultOpen={false}>
             <div className="grid md:grid-cols-2 gap-4">
               <div className="p-4 bg-gray-50 rounded-lg">
                 <p className="text-sm text-gray-600 mb-1">Nombre Completo</p>
@@ -249,6 +249,7 @@ export function InformeAuditoria({ resultado, auditoriaId }: { resultado: Result
               icon={Activity}
               badge={`${resultado.resultadoTerapia.diasTerapiaIntensiva + resultado.resultadoTerapia.diasTerapiaIntermedia} días`}
               badgeColor="bg-red-500"
+              defaultOpen={false}
             >
               <div className="grid md:grid-cols-3 gap-4 mb-6">
                 <MetricCard label="Terapia Intensiva" value={resultado.resultadoTerapia.diasTerapiaIntensiva} icon={Activity} color="red" subtitle="días" />
@@ -261,7 +262,7 @@ export function InformeAuditoria({ resultado, auditoriaId }: { resultado: Result
                 {resultado.resultadoTerapia.clasificacionPorDia?.map((dia: any, idx: number) => (
                   <div key={idx} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                     <div className={`w-3 h-3 rounded-full ${dia.clasificacion === 'terapia_intensiva' ? 'bg-red-500' :
-                        dia.clasificacion === 'terapia_intermedia' ? 'bg-orange-500' : 'bg-blue-500'
+                      dia.clasificacion === 'terapia_intermedia' ? 'bg-orange-500' : 'bg-blue-500'
                       }`} />
                     <span className="font-semibold text-gray-700 w-28">{dia.fecha}</span>
                     <span className="flex-1 text-sm text-gray-600">{dia.justificacion}</span>
@@ -273,7 +274,7 @@ export function InformeAuditoria({ resultado, auditoriaId }: { resultado: Result
 
           {/* Interconsultas */}
           {resultado.interconsultas && resultado.interconsultas.length > 0 && (
-            <CollapsibleSection title="Interconsultas" icon={Stethoscope} badge={resultado.interconsultas.length} badgeColor="bg-blue-500">
+            <CollapsibleSection title="Interconsultas" icon={Stethoscope} badge={resultado.interconsultas.length} badgeColor="bg-blue-500" defaultOpen={false}>
               <div className="space-y-3">
                 {resultado.interconsultas.map((inter: any, idx: number) => (
                   <div key={idx} className="p-4 bg-blue-50 rounded-lg border-l-4 border-blue-500">
@@ -296,7 +297,7 @@ export function InformeAuditoria({ resultado, auditoriaId }: { resultado: Result
 
           {/* Prácticas Excluidas */}
           {resultado.practicasExcluidas && resultado.practicasExcluidas.length > 0 && (
-            <CollapsibleSection title="Prácticas Excluidas" icon={Syringe} badge={resultado.practicasExcluidas.length} badgeColor="bg-yellow-500">
+            <CollapsibleSection title="Prácticas Excluidas" icon={Syringe} badge={resultado.practicasExcluidas.length} badgeColor="bg-yellow-500" defaultOpen={false}>
               <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4 mb-4">
                 <p className="text-yellow-800 font-semibold flex items-center gap-2">
                   <AlertTriangle className="w-5 h-5" />
@@ -324,7 +325,7 @@ export function InformeAuditoria({ resultado, auditoriaId }: { resultado: Result
 
           {/* Endoscopías */}
           {resultado.endoscopias && resultado.endoscopias.length > 0 && (
-            <CollapsibleSection title="Endoscopías" icon={FileText} badge={resultado.endoscopias.length} badgeColor="bg-purple-500">
+            <CollapsibleSection title="Endoscopías" icon={FileText} badge={resultado.endoscopias.length} badgeColor="bg-purple-500" defaultOpen={false}>
               <div className="space-y-4">
                 {resultado.endoscopias.map((endo: any, idx: number) => (
                   <div key={idx} className="p-4 bg-purple-50 rounded-lg border-2 border-purple-200">
@@ -363,7 +364,7 @@ export function InformeAuditoria({ resultado, auditoriaId }: { resultado: Result
                       <p className="text-sm text-red-700">{com.responsable}</p>
                     </div>
                     <span className={`px-3 py-1 rounded-full text-xs font-semibold ${com.urgencia === 'ALTA' ? 'bg-red-200 text-red-800' :
-                        com.urgencia === 'MEDIA' ? 'bg-orange-200 text-orange-800' : 'bg-yellow-200 text-yellow-800'
+                      com.urgencia === 'MEDIA' ? 'bg-orange-200 text-orange-800' : 'bg-yellow-200 text-yellow-800'
                       }`}>
                       {com.urgencia}
                     </span>
