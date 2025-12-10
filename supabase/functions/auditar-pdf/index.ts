@@ -216,91 +216,56 @@ function extractIngresoAlta(text: string): { ingreso: Date | null; alta: Date | 
   let ingreso: Date | null = null;
   let alta: Date | null = null;
 
-  // Patrón mejorado que captura fecha y hora en múltiples formatos
-  // Formatos soportados:
-  // - 22/08/2025, 05:29 a. m.
-  // - 22/08/2025 05:29
-  // - 22/08/2025, 05:29:30
-  // - 22/08/2025 17:49
-  const patronesFechaHora = [
-    // Con coma y a.m./p.m.
-    /fecha[\s_]*(de\s+)?(ingreso|alta)[\s:]*([0-9]{1,2}\/[0-9]{1,2}\/[0-9]{2,4})[\s,]+([0-9]{1,2}:[0-9]{2}(?::[0-9]{2})?)\s*(a\.?\s*m\.?|p\.?\s*m\.?)?/gi,
-    // Sin coma, con a.m./p.m.
-    /fecha[\s_]*(de\s+)?(ingreso|alta)[\s:]*([0-9]{1,2}\/[0-9]{1,2}\/[0-9]{2,4})\s+([0-9]{1,2}:[0-9]{2}(?::[0-9]{2})?)\s*(a\.?\s*m\.?|p\.?\s*m\.?)?/gi,
-    // Formato simple: fecha hora
-    /fecha[\s_]*(de\s+)?(ingreso|alta)[\s:]*([0-9]{1,2}\/[0-9]{1,2}\/[0-9]{2,4})\s+([0-9]{1,2}:[0-9]{2}(?::[0-9]{2})?)/gi,
-  ];
+  // Normalizar el texto para facilitar la búsqueda
+  const textoNormalizado = text.replace(/\s+/g, ' ');
 
-  for (const patron of patronesFechaHora) {
-    let m: RegExpExecArray | null;
-    const regex = new RegExp(patron.source, patron.flags);
-    while ((m = regex.exec(text)) !== null) {
-      const tipo = m[2].toLowerCase(); // "ingreso" o "alta"
-      const fecha = m[3]; // DD/MM/YYYY
-      let hora = m[4]; // HH:MM o HH:MM:SS
-      const ampm = m[5] ? m[5].toLowerCase().replace(/[\\.\\s]/g, '') : null; // "am" o "pm"
+  // Buscar "Fecha Ingreso:" o "Fecha de Ingreso:" seguido de fecha y hora
+  // Formato: 22/8/2025 08:29:36 o 22/08/2025, 05:29 a. m.
+  const patronIngreso = /(?:fecha\s+(?:de\s+)?ingreso|ingreso)[:\s]+(\d{1,2}\/\d{1,2}\/\d{2,4})\s+(\d{1,2}:\d{1,2}(?::\d{1,2})?)/i;
+  const matchIngreso = textoNormalizado.match(patronIngreso);
 
-      // Convertir formato 12h a 24h si tiene AM/PM
-      if (ampm) {
-        const [hh, mm, ss] = hora.split(':');
-        let hours = parseInt(hh);
-
-        if (ampm === 'pm' && hours !== 12) {
-          hours += 12;
-        } else if (ampm === 'am' && hours === 12) {
-          hours = 0;
-        }
-
-        hora = `${hours.toString().padStart(2, '0')}:${mm}${ss ? ':' + ss : ''}`;
-      }
-
-      const dt = makeDate(fecha, hora);
-      if (!Number.isNaN(dt.getTime())) {
-        if (tipo === "ingreso") {
-          ingreso = dt;
-        }
-        if (tipo === "alta") {
-          alta = dt;
-        }
-      }
+  if (matchIngreso) {
+    const fecha = matchIngreso[1];
+    const hora = matchIngreso[2];
+    const dt = makeDate(fecha, hora);
+    if (!Number.isNaN(dt.getTime())) {
+      ingreso = dt;
     }
   }
 
-  // Fallback: buscar solo fecha sin hora
+  // Si no encontró con hora, buscar solo fecha
   if (!ingreso) {
-    const patronesIngreso = [
-      /fecha[\s_]*(de\s+)?ingreso[\s:]*([0-9]{1,2}\/[0-9]{1,2}\/[0-9]{2,4})/i,
-      /ingreso[\s:]*([0-9]{1,2}\/[0-9]{1,2}\/[0-9]{2,4})/i
-    ];
-
-    for (const patron of patronesIngreso) {
-      const mi = text.match(patron);
-      if (mi) {
-        const fechaIndex = mi[2] || mi[1];
-        const dt = makeDate(fechaIndex);
-        if (!Number.isNaN(dt.getTime())) {
-          ingreso = dt;
-          break;
-        }
+    const patronIngresoSoloFecha = /(?:fecha\s+(?:de\s+)?ingreso|ingreso)[:\s]+(\d{1,2}\/\d{1,2}\/\d{2,4})/i;
+    const matchIngresoFecha = textoNormalizado.match(patronIngresoSoloFecha);
+    if (matchIngresoFecha) {
+      const dt = makeDate(matchIngresoFecha[1]);
+      if (!Number.isNaN(dt.getTime())) {
+        ingreso = dt;
       }
     }
   }
 
-  if (!alta) {
-    const patronesAlta = [
-      /fecha[\s_]*(de\s+)?alta[\s:]*([0-9]{1,2}\/[0-9]{1,2}\/[0-9]{2,4})/i,
-      /alta[\s:]*([0-9]{1,2}\/[0-9]{1,2}\/[0-9]{2,4})/i
-    ];
+  // Buscar "Fecha Alta:" o "Fecha de Alta:" seguido de fecha y hora
+  const patronAlta = /(?:fecha\s+(?:de\s+)?alta|alta)[:\s]+(\d{1,2}\/\d{1,2}\/\d{2,4})\s+(\d{1,2}:\d{1,2}(?::\d{1,2})?)/i;
+  const matchAlta = textoNormalizado.match(patronAlta);
 
-    for (const patron of patronesAlta) {
-      const ma = text.match(patron);
-      if (ma) {
-        const fechaIndex = ma[2] || ma[1];
-        const dt = makeDate(fechaIndex);
-        if (!Number.isNaN(dt.getTime())) {
-          alta = dt;
-          break;
-        }
+  if (matchAlta) {
+    const fecha = matchAlta[1];
+    const hora = matchAlta[2];
+    const dt = makeDate(fecha, hora);
+    if (!Number.isNaN(dt.getTime())) {
+      alta = dt;
+    }
+  }
+
+  // Si no encontró con hora, buscar solo fecha
+  if (!alta) {
+    const patronAltaSoloFecha = /(?:fecha\s+(?:de\s+)?alta|alta)[:\s]+(\d{1,2}\/\d{1,2}\/\d{2,4})/i;
+    const matchAltaFecha = textoNormalizado.match(patronAltaSoloFecha);
+    if (matchAltaFecha) {
+      const dt = makeDate(matchAltaFecha[1]);
+      if (!Number.isNaN(dt.getTime())) {
+        alta = dt;
       }
     }
   }
