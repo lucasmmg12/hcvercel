@@ -46,26 +46,34 @@ function CollapsibleSection({
   children,
   defaultOpen = true,
   badge,
-  badgeColor = 'bg-blue-500'
+  badgeColor = 'bg-green-500'
 }: any) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
-    <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-lg overflow-hidden mb-4">
+    <div
+      className="rounded-xl shadow-2xl overflow-hidden mb-4 relative"
+      style={{
+        background: 'rgba(255, 255, 255, 0.1)',
+        backdropFilter: 'blur(20px)',
+        border: '1px solid rgba(34, 197, 94, 0.2)',
+        boxShadow: '0 8px 32px 0 rgba(34, 197, 94, 0.2)',
+      }}
+    >
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+        className="w-full px-6 py-4 flex items-center justify-between hover:bg-white/5 transition-colors"
       >
         <div className="flex items-center gap-3">
-          <Icon className="w-6 h-6 text-blue-600" />
-          <h2 className="text-xl font-bold text-gray-900">{title}</h2>
+          <Icon className="w-6 h-6 text-green-400" />
+          <h2 className="text-xl font-bold text-white">{title}</h2>
           {badge !== undefined && (
-            <span className={`${badgeColor} text-white px-3 py-1 rounded-full text-sm font-semibold`}>
+            <span className={`${badgeColor} text-white px-3 py-1 rounded-full text-sm font-semibold shadow-lg`}>
               {badge}
             </span>
           )}
         </div>
-        {isOpen ? <ChevronUp className="w-5 h-5 text-gray-500" /> : <ChevronDown className="w-5 h-5 text-gray-500" />}
+        {isOpen ? <ChevronUp className="w-5 h-5 text-gray-300" /> : <ChevronDown className="w-5 h-5 text-gray-300" />}
       </button>
       {isOpen && <div className="px-6 pb-6 pt-2">{children}</div>}
     </div>
@@ -74,19 +82,24 @@ function CollapsibleSection({
 
 function MetricCard({ label, value, icon: Icon, color = 'blue', subtitle }: any) {
   const colorClasses: any = {
-    blue: 'bg-blue-50 border-blue-200 text-blue-700',
-    green: 'bg-green-50 border-green-200 text-green-700',
-    red: 'bg-red-50 border-red-200 text-red-700',
-    orange: 'bg-orange-50 border-orange-200 text-orange-700',
-    purple: 'bg-purple-50 border-purple-200 text-purple-700',
+    blue: 'from-blue-500/20 to-blue-600/20 border-blue-400/30 text-blue-300',
+    green: 'from-green-500/20 to-green-600/20 border-green-400/30 text-green-300',
+    red: 'from-red-500/20 to-red-600/20 border-red-400/30 text-red-300',
+    orange: 'from-orange-500/20 to-orange-600/20 border-orange-400/30 text-orange-300',
+    purple: 'from-purple-500/20 to-purple-600/20 border-purple-400/30 text-purple-300',
   };
 
   return (
-    <div className={`p-4 rounded-lg border-2 ${colorClasses[color]}`}>
-      <Icon className="w-8 h-8 mb-2" />
-      <p className="text-sm font-medium opacity-80 mb-1">{label}</p>
-      <p className="text-3xl font-bold">{value}</p>
-      {subtitle && <p className="text-xs opacity-70 mt-1">{subtitle}</p>}
+    <div
+      className={`p-4 rounded-lg border-2 bg-gradient-to-br ${colorClasses[color]} backdrop-blur-md`}
+      style={{
+        boxShadow: '0 4px 16px 0 rgba(34, 197, 94, 0.1)',
+      }}
+    >
+      <Icon className="w-8 h-8 mb-2 text-white" />
+      <p className="text-sm font-medium opacity-80 mb-1 text-gray-300">{label}</p>
+      <p className="text-3xl font-bold text-white">{value}</p>
+      {subtitle && <p className="text-xs opacity-70 mt-1 text-gray-400">{subtitle}</p>}
     </div>
   );
 }
@@ -167,32 +180,73 @@ export function InformeAuditoria({ resultado, auditoriaId }: { resultado: Result
 
   return (
     <>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 py-8 px-4">
-        <div className="max-w-7xl mx-auto">
+      <div
+        className="min-h-screen relative py-8 px-4 overflow-hidden"
+        style={{
+          backgroundImage: 'url(/fondogrow.png)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+        }}
+      >
+        {/* Overlay oscuro */}
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
 
-          {/* Header */}
-          <div className="bg-white rounded-2xl shadow-xl p-6 mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">Informe de Auditoría Médica</h1>
-                <p className="text-gray-600">{resultado.nombreArchivo}</p>
+        {/* Efectos de luz verde */}
+        <div className="absolute top-20 left-20 w-96 h-96 bg-green-500/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-20 right-20 w-96 h-96 bg-green-400/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
+
+        <div className="max-w-7xl mx-auto relative z-10">
+
+          {/* Header con glassmorphism */}
+          <div
+            className="rounded-2xl shadow-2xl p-6 mb-6 relative overflow-hidden"
+            style={{
+              background: 'rgba(255, 255, 255, 0.1)',
+              backdropFilter: 'blur(20px)',
+              border: '1px solid rgba(34, 197, 94, 0.3)',
+              boxShadow: '0 8px 32px 0 rgba(34, 197, 94, 0.3)',
+            }}
+          >
+            {/* Borde brillante animado */}
+            <div
+              className="absolute inset-0 rounded-2xl pointer-events-none"
+              style={{
+                background: 'linear-gradient(45deg, transparent, rgba(34, 197, 94, 0.3), transparent)',
+                animation: 'borderGlow 3s ease-in-out infinite',
+              }}
+            ></div>
+
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h1 className="text-3xl font-bold mb-2">
+                    <span className="bg-gradient-to-r from-green-400 to-emerald-300 bg-clip-text text-transparent">
+                      Informe de Auditoría Médica
+                    </span>
+                  </h1>
+                  <p className="text-gray-300">{resultado.nombreArchivo}</p>
+                </div>
+                <StatusBadge status={estadoGeneral} />
               </div>
-              <StatusBadge status={estadoGeneral} />
-            </div>
 
-            <div className="flex gap-3">
-              <button
-                onClick={handleDescargarPDF}
-                disabled={generandoPDF}
-                className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-md hover:shadow-lg disabled:opacity-50"
-              >
-                {generandoPDF ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
-                {generandoPDF ? 'Generando...' : 'Descargar PDF'}
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleDescargarPDF}
+                  disabled={generandoPDF}
+                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg font-bold transition-all hover:shadow-xl hover:shadow-green-500/50 hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 relative overflow-hidden group"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                  <span className="relative flex items-center gap-2">
+                    {generandoPDF ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
+                    {generandoPDF ? 'Generando...' : 'Descargar PDF'}
+                  </span>
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* Métricas */}
+          {/* Métricas con glassmorphism */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <MetricCard
               label="Días de Hospitalización"
@@ -385,8 +439,15 @@ export function InformeAuditoria({ resultado, auditoriaId }: { resultado: Result
           )}
 
           {/* Footer */}
-          <div className="mt-8 text-center text-gray-500 text-sm">
-            <p>Sistema desarrollado por <strong className="text-blue-600">Grow Labs</strong> - Sanatorio Argentino, San Juan</p>
+          <div className="mt-8 text-center">
+            <p className="text-gray-300 text-sm">
+              Powered by <strong className="text-green-400">Grow Labs</strong> - Sanatorio Argentino, San Juan
+            </p>
+            <div className="mt-4 flex justify-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+              <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse delay-150"></div>
+              <div className="w-2 h-2 rounded-full bg-green-300 animate-pulse delay-300"></div>
+            </div>
           </div>
         </div>
 
@@ -400,6 +461,45 @@ export function InformeAuditoria({ resultado, auditoriaId }: { resultado: Result
             </div>
           </div>
         )}
+
+        {/* CSS Animations */}
+        <style>{`
+          @keyframes borderGlow {
+            0%, 100% {
+              opacity: 0.3;
+            }
+            50% {
+              opacity: 0.8;
+            }
+          }
+          
+          .delay-150 {
+            animation-delay: 150ms;
+          }
+          
+          .delay-300 {
+            animation-delay: 300ms;
+          }
+          
+          .delay-1000 {
+            animation-delay: 1000ms;
+          }
+
+          @keyframes slide-in {
+            from {
+              transform: translateX(100%);
+              opacity: 0;
+            }
+            to {
+              transform: translateX(0);
+              opacity: 1;
+            }
+          }
+
+          .animate-slide-in {
+            animation: slide-in 0.3s ease-out;
+          }
+        `}</style>
       </div>
 
       {/* Modal de Confirmación */}
