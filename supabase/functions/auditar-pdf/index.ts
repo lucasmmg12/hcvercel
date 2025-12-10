@@ -1287,43 +1287,81 @@ const PATRONES_ENDOSCOPIA = [
 
 function detectarEndoscopias(texto: string): FojaEndoscopia[] {
   const endoscopias: FojaEndoscopia[] = [];
+  const procedimientosEncontrados = new Set<string>(); // Evitar duplicados
 
-  for (const patron of PATRONES_ENDOSCOPIA) {
+  // Patrones mejorados con nombres de procedimientos
+  const patronesMejorados = [
+    { patron: /\b(veda|endoscop[ií]a\s+digestiva\s+alta|endoscop[ií]a\s+alta)\b/gi, nombre: 'VEDA (Endoscopía Digestiva Alta)' },
+    { patron: /\b(colonoscop[ií]a|videocolonoscop[ií]a)\b/gi, nombre: 'Colonoscopía' },
+    { patron: /\b(broncoscop[ií]a|fibrobroncoscop[ií]a)\b/gi, nombre: 'Broncoscopía' },
+    { patron: /\b(rectosigmoidoscop[ií]a)\b/gi, nombre: 'Rectosigmoidoscopía' },
+    { patron: /\b(gastroscop[ií]a)\b/gi, nombre: 'Gastroscopía' },
+  ];
+
+  for (const { patron, nombre } of patronesMejorados) {
+    const regex = new RegExp(patron.source, patron.flags);
     let match;
-    const regex = new RegExp(patron.source, patron.flags + 'g');
 
     while ((match = regex.exec(texto)) !== null) {
-      const bloque = texto.substring(match.index, match.index + 3000);
+      // Crear clave única para evitar duplicados
+      const claveUnica = `${nombre}-${match.index}`;
+      if (procedimientosEncontrados.has(claveUnica)) continue;
 
-      // Extraer datos
-      const fechaMatch = bloque.match(/(\d{1,2}\/\d{1,2}\/\d{4})/);
+      // Extraer bloque de contexto (2000 caracteres después del match)
+      const inicioBloque = Math.max(0, match.index - 200);
+      const finBloque = Math.min(texto.length, match.index + 2000);
+      const bloque = texto.substring(inicioBloque, finBloque);
+
+      // Verificar que realmente sea una foja de endoscopía (no solo mención)
+      const esFojaEndoscopia = /(?:foja|hoja|informe).*(?:endoscop|procedimiento)/i.test(bloque) ||
+        /(?:endoscopista|hallazgos|biopsias)/i.test(bloque);
+
+      if (!esFojaEndoscopia) continue;
+
+      // Extraer fecha (buscar cerca del procedimiento)
+      const fechaMatch = bloque.match(/(?:fecha|realizado)[:\s]*(\d{1,2}\/\d{1,2}\/\d{2,4})/i) ||
+        bloque.match(/(\d{1,2}\/\d{1,2}\/\d{4})/);
       const fecha = fechaMatch ? fechaMatch[1] : '';
 
+      // Extraer horas
       const horaInicioMatch = bloque.match(/hora\s+inicio[:\s]*(\d{1,2}:\d{2})/i);
       const hora_inicio = horaInicioMatch ? horaInicioMatch[1] : undefined;
 
-      const horaFinMatch = bloque.match(/hora\s+fin[:\s]*(\d{1,2}:\d{2})/i);
+      const horaFinMatch = bloque.match(/hora\s+(?:fin|t[eé]rmino)[:\s]*(\d{1,2}:\d{2})/i);
       const hora_fin = horaFinMatch ? horaFinMatch[1] : undefined;
 
-      const endoscopistaMatch = bloque.match(/endoscopista[:\s]*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s,]{5,40})/i);
+      // Extraer endoscopista (mejorado)
+      const endoscopistaMatch = bloque.match(/(?:endoscopista|m[eé]dico|realiz[oó])[:\s]*(?:dr\.?\s*|dra\.?\s*)?([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+){1,3})/i);
       const endoscopistaNombre = endoscopistaMatch ? endoscopistaMatch[1].trim() : '';
 
-      const matriculaMatch = bloque.match(/(?:mp|mn|matr[ií]cula)[:\s]*(\d{3,6})/i);
+      // Extraer matrícula
+      const matriculaMatch = bloque.match(/(?:mp|mn|m\.?p\.?|matr[ií]cula)[:\s#]*(\d{3,7})/i);
       const matricula = matriculaMatch ? matriculaMatch[1] : undefined;
 
-      const hallazgosMatch = bloque.match(/hallazgos?[:\s]*([^\n]{10,300})/i);
-      const hallazgos = hallazgosMatch ? hallazgosMatch[1].trim() : undefined;
+      // Extraer hallazgos (mejorado)
+      const hallazgosMatch = bloque.match(/hallazgos?[:\s]*([^\n]{10,500})/i);
+      let hallazgos = hallazgosMatch ? hallazgosMatch[1].trim() : undefined;
 
-      const biopsias = /biopsia|muestra\s+histol[oó]gica/i.test(bloque);
+      // Limpiar hallazgos si es muy largo o tiene basura
+      if (hallazgos && hallazgos.length > 200) {
+        hallazgos = hallazgos.substring(0, 197) + '...';
+      }
 
+      // Detectar biopsias
+      const biopsias = /biopsia|muestra\s+histol[oó]gica|toma\s+de\s+muestra/i.test(bloque);
+
+      // Validaciones y errores
       const errores: string[] = [];
       if (!endoscopistaNombre) errores.push('Falta nombre del endoscopista');
       if (!matricula) errores.push('Falta matrícula del endoscopista');
       if (!fecha) errores.push('Falta fecha del procedimiento');
+      if (!hora_inicio && !hora_fin) errores.push('Faltan horarios del procedimiento');
+
+      procedimientosEncontrados.add(claveUnica);
 
       endoscopias.push({
         tipo: 'endoscopia',
-        procedimiento: match[0],
+        procedimiento: nombre,
         fecha,
         hora_inicio,
         hora_fin,
