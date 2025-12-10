@@ -1639,69 +1639,6 @@ function extraerEstudios(texto: string): EstudioDetectado[] {
   return estudios;
 }
 
-interface DiaInternacion {
-  fecha: string;
-  tieneEvolucion: boolean;
-  tieneFojaQuirurgica: boolean;
-  estudios: EstudioDetectado[];
-}
-
-function generarListaDiasInternacion(
-  fechaIngreso: Date,
-  fechaAlta: Date,
-  diasConEvolucion: Set<string>,
-  resultadosFoja: any,
-  estudios: EstudioDetectado[]
-): DiaInternacion[] {
-  const dias: DiaInternacion[] = [];
-  const fechaActual = new Date(fechaIngreso);
-
-  // Crear un mapa de estudios por fecha para búsqueda rápida
-  const estudiosPorFecha = new Map<string, EstudioDetectado[]>();
-  for (const estudio of estudios) {
-    if (!estudiosPorFecha.has(estudio.fecha)) {
-      estudiosPorFecha.set(estudio.fecha, []);
-    }
-    estudiosPorFecha.get(estudio.fecha)!.push(estudio);
-  }
-
-  // Crear un set de fechas con foja quirúrgica
-  const fechasConFoja = new Set<string>();
-  if (resultadosFoja && resultadosFoja.fojas) {
-    for (const foja of resultadosFoja.fojas) {
-      if (foja.fecha_cirugia) {
-        fechasConFoja.add(foja.fecha_cirugia);
-      }
-    }
-  }
-
-  // Generar lista de días
-  while (fechaActual <= fechaAlta) {
-    const fechaFormateada = formatearFecha(fechaActual);
-
-    // Formato YYYY-MM-DD para comparación con diasConEvolucion
-    const fechaISO = `${fechaActual.getFullYear()}-${String(fechaActual.getMonth() + 1).padStart(2, '0')}-${String(fechaActual.getDate()).padStart(2, '0')}`;
-
-    dias.push({
-      fecha: fechaFormateada,
-      tieneEvolucion: diasConEvolucion.has(fechaISO),
-      tieneFojaQuirurgica: fechasConFoja.has(fechaFormateada),
-      estudios: estudiosPorFecha.get(fechaFormateada) || [],
-    });
-
-    fechaActual.setDate(fechaActual.getDate() + 1);
-  }
-
-  return dias;
-}
-
-function formatearFecha(fecha: Date): string {
-  const dia = fecha.getDate().toString().padStart(2, '0');
-  const mes = (fecha.getMonth() + 1).toString().padStart(2, '0');
-  const anio = fecha.getFullYear();
-  return `${dia}/${mes}/${anio}`;
-}
-
 /* =========================
    Doctores / Foja
    ========================= */
@@ -2818,12 +2755,22 @@ Deno.serve(async (req: Request) => {
     );
 
     // Generar lista de días de internación
+    // Convertir estudiosDetectados al formato Estudio esperado
+    const estudiosParaLista = estudiosDetectados.map(e => ({
+      tipo: e.tipo,
+      categoria: (e.categoria.charAt(0).toUpperCase() + e.categoria.slice(1)) as any,
+      fecha: e.fecha,
+      informe_presente: true,
+      advertencias: []
+    }));
+
     const listaDiasInternacion = generarListaDiasInternacion(
       ingreso,
       fechaAlta,
       diasConEvolucion,
       resultadosFoja,
-      estudiosDetectados
+      estudiosParaLista,
+      datosPaciente.estaEnUCI
     );
 
     const resultado = {
