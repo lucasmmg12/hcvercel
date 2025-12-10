@@ -56,6 +56,124 @@ interface ResultadoAuditoria {
     tieneFojaQuirurgica: boolean;
     estudios: Array<{ tipo: string; categoria: string }>;
   }>;
+  // ===== NUEVO: Terapia Intensiva/Intermedia =====
+  diasTerapiaIntensiva?: number;
+  diasTerapiaIntermedia?: number;
+  diasInternacionGeneral?: number;
+  resultadoTerapia?: {
+    esTerapia: boolean;
+    diasTerapiaIntensiva: number;
+    diasTerapiaIntermedia: number;
+    diasInternacionGeneral: number;
+    clasificacionPorDia: Array<{
+      fecha: string;
+      clasificacion: 'terapia_intensiva' | 'terapia_intermedia' | 'internacion_general' | 'no_corresponde_terapia';
+      criteriosMayores: Array<{ tipo: string; nombre: string; presente: boolean; evidencia?: string }>;
+      criteriosMenores: Array<{ tipo: string; nombre: string; presente: boolean; evidencia?: string }>;
+      justificacion: string;
+      errores: string[];
+      advertencias: string[];
+    }>;
+    erroresGenerales: string[];
+  };
+  // ===== NUEVO: Interconsultas =====
+  interconsultas?: Array<{
+    fecha: string;
+    hora?: string;
+    especialidad: string;
+    consultor: { nombre: string; matricula?: string };
+    motivo: string;
+    diagnostico?: string;
+    practicas_realizadas: string[];
+    indicaciones: string[];
+    errores: string[];
+  }>;
+  // ===== NUEVO: Prácticas Excluidas =====
+  practicasExcluidas?: Array<{
+    tipo: string;
+    categoria: 'puncion' | 'cateter' | 'procedimiento_especial';
+    fecha?: string;
+    ubicacion_documento: 'evolucion' | 'foja_ambulatoria' | 'interconsulta';
+    requiere_autorizacion: boolean;
+    facturacion_aparte: boolean;
+    codigo_nomenclador?: string;
+    advertencia: string;
+  }>;
+  // ===== NUEVO: Endoscopías =====
+  endoscopias?: Array<{
+    tipo: 'endoscopia';
+    procedimiento: string;
+    fecha: string;
+    hora_inicio?: string;
+    hora_fin?: string;
+    endoscopista: { nombre: string; matricula?: string };
+    hallazgos?: string;
+    biopsias: boolean;
+    errores: string[];
+  }>;
+  // ===== NUEVO: Prácticas Ambulatorias =====
+  practicasAmbulatorias?: Array<{
+    tipo: string;
+    fecha: string;
+    hora?: string;
+    ubicacion: 'durante_internacion';
+    requiere_autorizacion: boolean;
+    errores: string[];
+  }>;
+}
+
+// Función para abreviar nombres de estudios
+function abreviarEstudio(nombreCompleto: string): string {
+  const abreviaturas: Record<string, string> = {
+    // Imágenes
+    'TAC': 'TAC',
+    'Tomografía': 'TAC',
+    'Resonancia Magnética': 'RM',
+    'Resonancia': 'RM',
+    'Radiografía': 'RX',
+    'Ecografía': 'ECO',
+    'Doppler': 'Doppler',
+    'Angio': 'Angio',
+
+    // Laboratorio
+    'Hemograma': 'Hemograma',
+    'PCR': 'PCR',
+    'VSG': 'VSG',
+    'Glucemia': 'Glucemia',
+    'Creatinina': 'Creatinina',
+    'Urea': 'Urea',
+    'Ionograma': 'Ionograma',
+    'Perfil hepático': 'P. Hepático',
+    'Orina completa': 'Orina',
+
+    // Procedimientos
+    'Electrocardiograma': 'ECG',
+    'Ecocardiograma': 'Ecocardio',
+    'Endoscopía alta': 'VEDA',
+    'Endoscopía': 'Endoscopía',
+    'Colonoscopía': 'Colonoscopía',
+    'Broncoscopía': 'Broncoscopía',
+    'Procedimiento': 'Proc.',
+    'Kinesiología': 'Kine',
+    'Paracentesis': 'Paracentesis',
+    'Toracocentesis': 'Toracocentesis',
+    'Punción lumbar': 'P. Lumbar'
+  };
+
+  // Buscar coincidencia exacta primero
+  for (const [clave, abrev] of Object.entries(abreviaturas)) {
+    if (nombreCompleto.includes(clave)) {
+      // Si tiene "de" (ej: "TAC de tórax"), mantener la parte específica
+      const partes = nombreCompleto.split(' de ');
+      if (partes.length > 1) {
+        return `${abrev} ${partes[1]}`;
+      }
+      return abrev;
+    }
+  }
+
+  // Si no hay coincidencia, devolver el nombre original truncado si es muy largo
+  return nombreCompleto.length > 20 ? nombreCompleto.substring(0, 17) + '...' : nombreCompleto;
 }
 
 export function AuditarPDF() {
@@ -282,8 +400,9 @@ export function AuditarPDF() {
                                   <span
                                     key={eIdx}
                                     className="inline-block px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs"
+                                    title={estudio.tipo} // Tooltip con nombre completo
                                   >
-                                    {estudio.tipo}
+                                    {abreviarEstudio(estudio.tipo)}
                                   </span>
                                 ))}
                               </div>

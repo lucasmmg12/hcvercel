@@ -87,6 +87,86 @@ interface Estudio {
   numero_hoja?: number; // Número de página donde se encontró el estudio
 }
 
+/* ======== NUEVO: Terapia Intensiva/Intermedia ======== */
+interface CriterioTerapia {
+  tipo: 'mayor' | 'menor';
+  nombre: string;
+  presente: boolean;
+  evidencia?: string;
+}
+
+interface ClasificacionDiaTerapia {
+  fecha: string;
+  clasificacion: 'terapia_intensiva' | 'terapia_intermedia' | 'internacion_general' | 'no_corresponde_terapia';
+  criteriosMayores: CriterioTerapia[];
+  criteriosMenores: CriterioTerapia[];
+  justificacion: string;
+  errores: string[];
+  advertencias: string[];
+}
+
+interface ResultadoTerapia {
+  esTerapia: boolean;
+  diasTerapiaIntensiva: number;
+  diasTerapiaIntermedia: number;
+  diasInternacionGeneral: number;
+  clasificacionPorDia: ClasificacionDiaTerapia[];
+  erroresGenerales: string[];
+}
+
+/* ======== NUEVO: Interconsultas ======== */
+interface Interconsulta {
+  fecha: string;
+  hora?: string;
+  especialidad: string;
+  solicitante?: { nombre: string; matricula?: string };
+  consultor: { nombre: string; matricula?: string };
+  motivo: string;
+  diagnostico?: string;
+  practicas_realizadas: string[];
+  indicaciones: string[];
+  errores: string[];
+}
+
+/* ======== NUEVO: Prácticas Excluidas ======== */
+interface PracticaExcluida {
+  tipo: string;
+  categoria: 'puncion' | 'cateter' | 'procedimiento_especial';
+  fecha?: string;
+  ubicacion_documento: 'evolucion' | 'foja_ambulatoria' | 'interconsulta';
+  profesional?: { nombre: string; matricula?: string };
+  requiere_autorizacion: boolean;
+  facturacion_aparte: boolean;
+  codigo_nomenclador?: string;
+  advertencia: string;
+}
+
+/* ======== NUEVO: Endoscopías ======== */
+interface FojaEndoscopia {
+  tipo: 'endoscopia';
+  procedimiento: string;
+  fecha: string;
+  hora_inicio?: string;
+  hora_fin?: string;
+  endoscopista: { nombre: string; matricula?: string };
+  ayudante?: { nombre: string; matricula?: string };
+  anestesista?: { nombre: string; matricula?: string };
+  hallazgos?: string;
+  biopsias: boolean;
+  errores: string[];
+}
+
+/* ======== NUEVO: Prácticas Ambulatorias ======== */
+interface PracticaAmbulatoria {
+  tipo: string;
+  fecha: string;
+  hora?: string;
+  profesional?: { nombre: string; matricula?: string };
+  ubicacion: 'durante_internacion';
+  requiere_autorizacion: boolean;
+  errores: string[];
+}
+
 /* =========================
    Utilidades
    ========================= */
@@ -136,37 +216,92 @@ function extractIngresoAlta(text: string): { ingreso: Date | null; alta: Date | 
   let ingreso: Date | null = null;
   let alta: Date | null = null;
 
-  const reFechaHora =
-    /fecha[\s_]*(ingreso|alta)[\s:]*([0-9]{1,2}\/[0-9]{1,2}\/[0-9]{2,4})[\s]+([0-9]{1,2}:[0-9]{2}(?::[0-9]{2})?)/gi;
-  let m: RegExpExecArray | null;
-  while ((m = reFechaHora.exec(text)) !== null) {
-    const tipo = m[1].toLowerCase();
-    const fecha = m[2];
-    const hora = m[3];
-    const dt = makeDate(fecha, hora);
-    if (!Number.isNaN(dt.getTime())) {
-      if (tipo === "ingreso") ingreso = dt;
-      if (tipo === "alta") alta = dt;
+  // Patrón mejorado que captura fecha y hora en múltiples formatos
+  // Formatos soportados:
+  // - 22/08/2025, 05:29 a. m.
+  // - 22/08/2025 05:29
+  // - 22/08/2025, 05:29:30
+  // - 22/08/2025 17:49
+  const patronesFechaHora = [
+    // Con coma y a.m./p.m.
+    /fecha[\s_]*(de\s+)?(ingreso|alta)[\s:]*([0-9]{1,2}\/[0-9]{1,2}\/[0-9]{2,4})[\s,]+([0-9]{1,2}:[0-9]{2}(?::[0-9]{2})?)\s*(a\.?\s*m\.?|p\.?\s*m\.?)?/gi,
+    // Sin coma, con a.m./p.m.
+    /fecha[\s_]*(de\s+)?(ingreso|alta)[\s:]*([0-9]{1,2}\/[0-9]{1,2}\/[0-9]{2,4})\s+([0-9]{1,2}:[0-9]{2}(?::[0-9]{2})?)\s*(a\.?\s*m\.?|p\.?\s*m\.?)?/gi,
+    // Formato simple: fecha hora
+    /fecha[\s_]*(de\s+)?(ingreso|alta)[\s:]*([0-9]{1,2}\/[0-9]{1,2}\/[0-9]{2,4})\s+([0-9]{1,2}:[0-9]{2}(?::[0-9]{2})?)/gi,
+  ];
+
+  for (const patron of patronesFechaHora) {
+    let m: RegExpExecArray | null;
+    const regex = new RegExp(patron.source, patron.flags);
+    while ((m = regex.exec(text)) !== null) {
+      const tipo = m[2].toLowerCase(); // "ingreso" o "alta"
+      const fecha = m[3]; // DD/MM/YYYY
+      let hora = m[4]; // HH:MM o HH:MM:SS
+      const ampm = m[5] ? m[5].toLowerCase().replace(/[\\.\\s]/g, '') : null; // "am" o "pm"
+
+      // Convertir formato 12h a 24h si tiene AM/PM
+      if (ampm) {
+        const [hh, mm, ss] = hora.split(':');
+        let hours = parseInt(hh);
+
+        if (ampm === 'pm' && hours !== 12) {
+          hours += 12;
+        } else if (ampm === 'am' && hours === 12) {
+          hours = 0;
+        }
+
+        hora = `${hours.toString().padStart(2, '0')}:${mm}${ss ? ':' + ss : ''}`;
+      }
+
+      const dt = makeDate(fecha, hora);
+      if (!Number.isNaN(dt.getTime())) {
+        if (tipo === "ingreso") {
+          ingreso = dt;
+        }
+        if (tipo === "alta") {
+          alta = dt;
+        }
+      }
     }
   }
 
+  // Fallback: buscar solo fecha sin hora
   if (!ingreso) {
-    const mi = text.match(
-      /fecha[\s_]*ingreso[\s:]*([0-9]{1,2}\/[0-9]{1,2}\/[0-9]{2,4})/i
-    );
-    if (mi) {
-      const dt = makeDate(mi[1]);
-      if (!Number.isNaN(dt.getTime())) ingreso = dt;
+    const patronesIngreso = [
+      /fecha[\s_]*(de\s+)?ingreso[\s:]*([0-9]{1,2}\/[0-9]{1,2}\/[0-9]{2,4})/i,
+      /ingreso[\s:]*([0-9]{1,2}\/[0-9]{1,2}\/[0-9]{2,4})/i
+    ];
+
+    for (const patron of patronesIngreso) {
+      const mi = text.match(patron);
+      if (mi) {
+        const fechaIndex = mi[2] || mi[1];
+        const dt = makeDate(fechaIndex);
+        if (!Number.isNaN(dt.getTime())) {
+          ingreso = dt;
+          break;
+        }
+      }
     }
   }
 
   if (!alta) {
-    const ma = text.match(
-      /fecha[\s_]*alta[\s:]*([0-9]{1,2}\/[0-9]{1,2}\/[0-9]{2,4})/i
-    );
-    if (ma) {
-      const dt = makeDate(ma[1]);
-      if (!Number.isNaN(dt.getTime())) alta = dt;
+    const patronesAlta = [
+      /fecha[\s_]*(de\s+)?alta[\s:]*([0-9]{1,2}\/[0-9]{1,2}\/[0-9]{2,4})/i,
+      /alta[\s:]*([0-9]{1,2}\/[0-9]{1,2}\/[0-9]{2,4})/i
+    ];
+
+    for (const patron of patronesAlta) {
+      const ma = text.match(patron);
+      if (ma) {
+        const fechaIndex = ma[2] || ma[1];
+        const dt = makeDate(fechaIndex);
+        if (!Number.isNaN(dt.getTime())) {
+          alta = dt;
+          break;
+        }
+      }
     }
   }
 
@@ -352,7 +487,7 @@ function extraerEvolucionesMejorado(
 
   const patronVisita =
     /visita[\s_]+(\d{1,2}\/\d{1,2}\/\d{4})(?:\s+\d{1,2}:\d{2})?/gi;
-  
+
   // Patrones base para evoluciones diarias
   const patronesEvolDiaria = [
     /evolución[\s_\n]+médica[\s_\n]+diaria/i,
@@ -410,7 +545,7 @@ function extraerEvolucionesMejorado(
           }
         }
       }
-    } catch {}
+    } catch { }
   }
 
   const fechasYa = new Set<string>();
@@ -436,7 +571,7 @@ function extraerEvolucionesMejorado(
           errores.push(`❌ CRÍTICO: ${fechaStr} - Falta ${nombreEvolucion}`);
         }
       }
-    } catch {}
+    } catch { }
   }
 
   // ========= NUEVO: Verificación día por día de todos los días de internación =========
@@ -445,7 +580,7 @@ function extraerEvolucionesMejorado(
   const inicio = startOfDay(fechaAdmisionDate);
   const fin = startOfDay(fechaAltaDate);
   const MS_DIA = 1000 * 60 * 60 * 24;
-  
+
   let fechaActual = new Date(inicio);
   while (fechaActual <= fin) {
     const dia = String(fechaActual.getDate()).padStart(2, "0");
@@ -457,7 +592,7 @@ function extraerEvolucionesMejorado(
 
   // Para cada día del rango, buscar si existe evolución en el texto
   const diasVerificados = new Set<string>();
-  
+
   for (const fechaStr of todosLosDias) {
     // Evitar duplicar errores ya reportados por la lógica anterior
     if (diasVerificados.has(fechaStr)) continue;
@@ -473,9 +608,9 @@ function extraerEvolucionesMejorado(
       // 1. Buscar "visita" con esta fecha (método original que funcionaba)
       // 2. Buscar fecha cerca de patrones de evolución
       // 3. Buscar patrones de evolución y luego verificar si hay fecha cerca
-      
+
       let tieneEvolucion = false;
-      
+
       // Método 1: Buscar "visita" con esta fecha (más confiable)
       const patronVisitaConFecha = new RegExp(
         `visita[\\s_]+${fechaStr.replace(/\//g, "[\\s/]")}(?:[\\s]+\\d{1,2}:\\d{2})?`,
@@ -494,7 +629,7 @@ function extraerEvolucionesMejorado(
         }
         if (tieneEvolucion) break;
       }
-      
+
       // Método 2: Buscar fecha cerca de evoluciones (si no se encontró con método 1)
       if (!tieneEvolucion) {
         // Variaciones del formato de fecha
@@ -504,14 +639,14 @@ function extraerEvolucionesMejorado(
           `${d.padStart(2, "0")}/${m.padStart(2, "0")}/${a}`, // Con padding
           `${d}\\s*/\\s*${m}\\s*/\\s*${a}`, // Con espacios opcionales
         ];
-        
+
         for (const fechaVariante of variacionesFecha) {
           const patronFecha = new RegExp(
             `(?:${fechaVariante.replace(/\//g, "[\\s/]")})`,
             "gi"
           );
           let matchFecha;
-          
+
           while ((matchFecha = patronFecha.exec(textoNormalizado)) !== null) {
             const posicionFecha = matchFecha.index;
             // Buscar en un rango más amplio (3000 caracteres) alrededor de la fecha
@@ -521,7 +656,7 @@ function extraerEvolucionesMejorado(
               posicionFecha + matchFecha[0].length + 2000
             );
             const bloqueAlrededor = textoNormalizado.substring(inicioBusqueda, finBusqueda);
-            
+
             // Verificar si en este bloque hay algún patrón de evolución
             for (const patronEvol of patronesEvolDiaria) {
               if (patronEvol.test(bloqueAlrededor)) {
@@ -535,7 +670,7 @@ function extraerEvolucionesMejorado(
           if (tieneEvolucion) break;
         }
       }
-      
+
       // Método 3: Buscar evoluciones y luego verificar fecha cerca (último recurso)
       if (!tieneEvolucion) {
         for (const patronEvol of patronesEvolDiaria) {
@@ -550,7 +685,7 @@ function extraerEvolucionesMejorado(
               posicionEvol + matchEvol[0].length + 500
             );
             const bloqueAlrededor = textoNormalizado.substring(inicioBusqueda, finBusqueda);
-            
+
             // Buscar la fecha en este bloque
             const patronFechaEnBloque = new RegExp(
               `(?:${fechaStr.replace(/\//g, "[\\s/]")}|${d}[\\s/]+${m}[\\s/]+${a})`,
@@ -593,7 +728,7 @@ function extraerEvolucionesMejorado(
           const nombreEvolucion = estaEnUCI
             ? "'UCI - Hoja de Evolucion' o 'Evolución médica diaria'"
             : "'Evolución médica diaria'";
-          
+
           // Verificar que no se haya agregado ya este error
           const yaTieneError = errores.some((e) => e.includes(fechaStr));
           if (!yaTieneError) {
@@ -657,6 +792,636 @@ function verificarEpicrisis(texto: string): string[] {
 
   if (!ok) errores.push("⚠️ ADVERTENCIA: No se encontró documento de epicrisis");
   return errores;
+}
+
+/* =========================
+   NUEVO: Terapia Intensiva/Intermedia
+   ========================= */
+const PATRONES_CRITERIOS_MAYORES: Record<string, RegExp[]> = {
+  ventilacion_mecanica: [
+    /ventilaci[oó]n\s+mec[aá]nica/i,
+    /\bARM\b/i,
+    /\bIOT\b/i,
+    /intubado/i,
+    /tubo\s+endotraqueal/i,
+    /ventilador/i
+  ],
+  shock: [
+    /shock\s+(s[eé]ptico|cardiog[eé]nico|hipovolémico|distributivo)/i,
+    /hipotensi[oó]n\s+severa/i,
+    /PAM\s*[<≤]\s*65/i
+  ],
+  insuf_respiratoria: [
+    /insuficiencia\s+respiratoria\s+aguda/i,
+    /IRA\s+grave/i,
+    /PaO2\/FiO2\s*[<≤]\s*200/i,
+    /hipoxemia\s+severa/i
+  ],
+  coma: [
+    /\bcoma\b/i,
+    /Glasgow\s*[≤<]\s*8/i,
+    /GCS\s*[≤<]\s*8/i
+  ],
+  sepsis: [
+    /sepsis\s+grave/i,
+    /shock\s+s[eé]ptico/i,
+    /sepsis\s+severa/i
+  ],
+  dialisis: [
+    /di[aá]lisis/i,
+    /hemodi[aá]lisis/i,
+    /terapia\s+de\s+reemplazo\s+renal/i,
+    /\bTRR\b/i
+  ]
+};
+
+const PATRONES_CRITERIOS_MENORES: Record<string, RegExp[]> = {
+  monitoreo_invasivo: [
+    /cat[eé]ter\s+arterial/i,
+    /Swan-Ganz/i,
+    /\bPVC\b/i,
+    /monitoreo\s+hemodin[aá]mico\s+invasivo/i
+  ],
+  soporte_vasopresor: [
+    /noradrenalina/i,
+    /dopamina/i,
+    /vasopresina/i,
+    /drogas\s+vasoactivas/i,
+    /inotr[oó]picos/i
+  ],
+  vmni: [
+    /\bCPAP\b/i,
+    /\bBiPAP\b/i,
+    /ventilaci[oó]n\s+no\s+invasiva/i,
+    /\bVMNI\b/i
+  ],
+  arritmias: [
+    /arritmia/i,
+    /fibrilaci[oó]n/i,
+    /taquicardia\s+ventricular/i
+  ],
+  postoperatorio: [
+    /postoperatorio\s+inmediato/i,
+    /post[-\s]?quir[uú]rgico/i,
+    /cirug[ií]a\s+mayor/i
+  ]
+};
+
+function evaluarCriteriosTerapia(texto: string): {
+  criteriosMayores: CriterioTerapia[];
+  criteriosMenores: CriterioTerapia[];
+} {
+  const criteriosMayores: CriterioTerapia[] = [];
+  const criteriosMenores: CriterioTerapia[] = [];
+
+  // Evaluar criterios mayores
+  for (const [nombre, patrones] of Object.entries(PATRONES_CRITERIOS_MAYORES)) {
+    let presente = false;
+    let evidencia = '';
+
+    for (const patron of patrones) {
+      const match = texto.match(patron);
+      if (match) {
+        presente = true;
+        evidencia = match[0];
+        break;
+      }
+    }
+
+    criteriosMayores.push({
+      tipo: 'mayor',
+      nombre: nombre.replace(/_/g, ' '),
+      presente,
+      evidencia
+    });
+  }
+
+  // Evaluar criterios menores
+  for (const [nombre, patrones] of Object.entries(PATRONES_CRITERIOS_MENORES)) {
+    let presente = false;
+    let evidencia = '';
+
+    for (const patron of patrones) {
+      const match = texto.match(patron);
+      if (match) {
+        presente = true;
+        evidencia = match[0];
+        break;
+      }
+    }
+
+    criteriosMenores.push({
+      tipo: 'menor',
+      nombre: nombre.replace(/_/g, ' '),
+      presente,
+      evidencia
+    });
+  }
+
+  return { criteriosMayores, criteriosMenores };
+}
+
+function clasificarDiaTerapia(
+  fecha: string,
+  evolucionTexto: string
+): ClasificacionDiaTerapia {
+  const { criteriosMayores, criteriosMenores } = evaluarCriteriosTerapia(evolucionTexto);
+
+  const mayoresPresentes = criteriosMayores.filter(c => c.presente).length;
+  const menoresPresentes = criteriosMenores.filter(c => c.presente).length;
+
+  let clasificacion: ClasificacionDiaTerapia['clasificacion'];
+  let justificacion: string;
+  const errores: string[] = [];
+  const advertencias: string[] = [];
+
+  // Lógica de clasificación
+  if (mayoresPresentes >= 1) {
+    // Con 1 o más criterios mayores → Terapia Intensiva
+    clasificacion = 'terapia_intensiva';
+    justificacion = `Cumple ${mayoresPresentes} criterio(s) mayor(es): ${criteriosMayores.filter(c => c.presente).map(c => c.nombre).join(', ')}`;
+  } else if (menoresPresentes >= 2) {
+    // Con 2 o más criterios menores → Terapia Intensiva
+    clasificacion = 'terapia_intensiva';
+    justificacion = `Cumple ${menoresPresentes} criterios menores: ${criteriosMenores.filter(c => c.presente).map(c => c.nombre).join(', ')}`;
+  } else if (menoresPresentes === 1) {
+    // Con 1 criterio menor → Terapia Intermedia
+    clasificacion = 'terapia_intermedia';
+    justificacion = `Cumple 1 criterio menor: ${criteriosMenores.filter(c => c.presente).map(c => c.nombre).join(', ')}`;
+  } else {
+    // Sin criterios → No corresponde a terapia
+    clasificacion = 'internacion_general';
+    justificacion = 'No cumple criterios de terapia intensiva ni intermedia';
+  }
+
+  return {
+    fecha,
+    clasificacion,
+    criteriosMayores,
+    criteriosMenores,
+    justificacion,
+    errores,
+    advertencias
+  };
+}
+
+function analizarTerapia(
+  texto: string,
+  ingreso: Date,
+  alta: Date,
+  estaEnUCI: boolean
+): ResultadoTerapia {
+  if (!estaEnUCI) {
+    return {
+      esTerapia: false,
+      diasTerapiaIntensiva: 0,
+      diasTerapiaIntermedia: 0,
+      diasInternacionGeneral: 0,
+      clasificacionPorDia: [],
+      erroresGenerales: []
+    };
+  }
+
+  const clasificacionPorDia: ClasificacionDiaTerapia[] = [];
+  let diasTerapiaIntensiva = 0;
+  let diasTerapiaIntermedia = 0;
+  let diasInternacionGeneral = 0;
+
+  // Generar todos los días de internación
+  const todosLosDias: string[] = [];
+  const inicio = startOfDay(ingreso);
+  const fin = startOfDay(alta);
+  const MS_DIA = 1000 * 60 * 60 * 24;
+
+  let fechaActual = new Date(inicio);
+  while (fechaActual <= fin) {
+    const dia = String(fechaActual.getDate()).padStart(2, "0");
+    const mes = String(fechaActual.getMonth() + 1).padStart(2, "0");
+    const anio = fechaActual.getFullYear();
+    todosLosDias.push(`${dia}/${mes}/${anio}`);
+    fechaActual = new Date(fechaActual.getTime() + MS_DIA);
+  }
+
+  // Para cada día, buscar la evolución y clasificar
+  const patronVisita = /visita\s+(\d{1,2}\/\d{1,2}\/\d{4})/gi;
+
+  for (const fechaStr of todosLosDias) {
+    // Buscar evolución de este día
+    const regex = new RegExp(`visita\\s+${fechaStr.replace(/\//g, '\\/')}`, 'gi');
+    let match = regex.exec(texto);
+
+    if (match) {
+      // Extraer el bloque de evolución (siguiente 2000 caracteres)
+      const bloqueEvolucion = texto.substring(match.index, match.index + 2000);
+      const clasificacion = clasificarDiaTerapia(fechaStr, bloqueEvolucion);
+      clasificacionPorDia.push(clasificacion);
+
+      // Contar días por tipo
+      if (clasificacion.clasificacion === 'terapia_intensiva') {
+        diasTerapiaIntensiva++;
+      } else if (clasificacion.clasificacion === 'terapia_intermedia') {
+        diasTerapiaIntermedia++;
+      } else if (clasificacion.clasificacion === 'internacion_general') {
+        diasInternacionGeneral++;
+      }
+    }
+  }
+
+  return {
+    esTerapia: true,
+    diasTerapiaIntensiva,
+    diasTerapiaIntermedia,
+    diasInternacionGeneral,
+    clasificacionPorDia,
+    erroresGenerales: []
+  };
+}
+
+/* =========================
+   NUEVO: Interconsultas
+   ========================= */
+const ESPECIALIDADES_MEDICAS = [
+  'cardiología', 'neurología', 'neurocirugía', 'traumatología',
+  'cirugía general', 'cirugía cardiovascular', 'infectología',
+  'nefrología', 'gastroenterología', 'hematología', 'oncología',
+  'neumología', 'endocrinología', 'reumatología', 'dermatología',
+  'oftalmología', 'otorrinolaringología', 'urología', 'ginecología',
+  'psiquiatría', 'clínica médica', 'medicina interna', 'anestesiología',
+  'terapia intensiva', 'cuidados paliativos', 'nutrición'
+];
+
+function identificarEspecialidad(texto: string): string | null {
+  const textoNorm = texto.toLowerCase().trim();
+
+  for (const esp of ESPECIALIDADES_MEDICAS) {
+    if (textoNorm.includes(esp)) {
+      return esp.charAt(0).toUpperCase() + esp.slice(1);
+    }
+  }
+
+  // Abreviaturas comunes
+  const abreviaturas: Record<string, string> = {
+    'cardio': 'Cardiología',
+    'neuro': 'Neurología',
+    'traumato': 'Traumatología',
+    'cir gen': 'Cirugía General',
+    'infecto': 'Infectología',
+    'nefro': 'Nefrología',
+    'gastro': 'Gastroenterología',
+    'hemato': 'Hematología',
+    'onco': 'Oncología',
+    'neumo': 'Neumología',
+    'endocrino': 'Endocrinología',
+    'uti': 'Terapia Intensiva',
+    'uci': 'Terapia Intensiva'
+  };
+
+  for (const [abrev, especialidad] of Object.entries(abreviaturas)) {
+    if (textoNorm.includes(abrev)) {
+      return especialidad;
+    }
+  }
+
+  return null;
+}
+
+function extraerInterconsultas(texto: string): Interconsulta[] {
+  const interconsultas: Interconsulta[] = [];
+  const lineas = texto.split('\n');
+
+  const PATRONES_INTERCONSULTA = [
+    /interconsulta\s+(?:a\s+)?([a-záéíóúñ\s]+)/i,
+    /consulta\s+(?:a\s+)?([a-záéíóúñ\s]+)/i,
+    /evaluaci[oó]n\s+por\s+([a-záéíóúñ\s]+)/i,
+    /valoraci[oó]n\s+por\s+([a-záéíóúñ\s]+)/i
+  ];
+
+  for (let i = 0; i < lineas.length; i++) {
+    const linea = lineas[i];
+
+    for (const patron of PATRONES_INTERCONSULTA) {
+      const match = linea.match(patron);
+      if (match) {
+        const especialidadCruda = match[1].trim();
+        const especialidad = identificarEspecialidad(especialidadCruda);
+
+        if (especialidad) {
+          const bloqueInter = lineas.slice(i, i + 50).join('\n');
+
+          // Extraer fecha
+          const fechaMatch = bloqueInter.match(/(\d{1,2}\/\d{1,2}\/\d{4})/);
+          const fecha = fechaMatch ? fechaMatch[1] : '';
+
+          // Extraer hora
+          const horaMatch = bloqueInter.match(/(\d{1,2}:\d{2})/);
+          const hora = horaMatch ? horaMatch[1] : undefined;
+
+          // Extraer consultor
+          const consultorMatch = bloqueInter.match(/(?:consultor|m[eé]dico)[:\s]*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s,]{5,40})/i);
+          const consultorNombre = consultorMatch ? consultorMatch[1].trim() : '';
+
+          const matriculaMatch = bloqueInter.match(/(?:mp|mn|matr[ií]cula)[:\s]*(\d{3,6})/i);
+          const matricula = matriculaMatch ? matriculaMatch[1] : undefined;
+
+          // Extraer motivo
+          const motivoMatch = bloqueInter.match(/motivo[:\s]*([^\n]{10,200})/i);
+          const motivo = motivoMatch ? motivoMatch[1].trim() : '';
+
+          // Extraer diagnóstico
+          const diagnosticoMatch = bloqueInter.match(/diagn[oó]stico[:\s]*([^\n]{10,200})/i);
+          const diagnostico = diagnosticoMatch ? diagnosticoMatch[1].trim() : undefined;
+
+          const errores: string[] = [];
+          if (!consultorNombre) errores.push('Falta nombre del médico consultor');
+          if (!matricula) errores.push('Falta matrícula del médico consultor');
+          if (!motivo) errores.push('Falta motivo de interconsulta');
+
+          interconsultas.push({
+            fecha,
+            hora,
+            especialidad,
+            consultor: { nombre: consultorNombre, matricula },
+            motivo,
+            diagnostico,
+            practicas_realizadas: [],
+            indicaciones: [],
+            errores
+          });
+        }
+      }
+    }
+  }
+
+  return interconsultas;
+}
+
+/* =========================
+   NUEVO: Prácticas Excluidas
+   ========================= */
+const PRACTICAS_EXCLUIDAS_CONFIG = {
+  punciones: [
+    {
+      patron: /punci[oó]n\s+lumbar/i,
+      nombre: 'Punción lumbar',
+      requiere_autorizacion: true,
+      facturacion_aparte: true,
+      codigo: '34.01.01'
+    },
+    {
+      patron: /punci[oó]n\s+pleural|toracocentesis/i,
+      nombre: 'Punción pleural / Toracocentesis',
+      requiere_autorizacion: true,
+      facturacion_aparte: true,
+      codigo: '34.02.01'
+    },
+    {
+      patron: /punci[oó]n\s+asc[ií]tica|paracentesis/i,
+      nombre: 'Punción ascítica / Paracentesis',
+      requiere_autorizacion: true,
+      facturacion_aparte: true,
+      codigo: '34.03.01'
+    },
+    {
+      patron: /punci[oó]n\s+articular/i,
+      nombre: 'Punción articular',
+      requiere_autorizacion: true,
+      facturacion_aparte: true
+    }
+  ],
+  cateteres: [
+    {
+      patron: /cat[eé]ter\s+venoso\s+central|\bCVC\b/i,
+      nombre: 'Catéter venoso central',
+      requiere_autorizacion: false,
+      facturacion_aparte: true,
+      codigo: '35.01.01'
+    },
+    {
+      patron: /cat[eé]ter\s+arterial/i,
+      nombre: 'Catéter arterial',
+      requiere_autorizacion: false,
+      facturacion_aparte: true
+    },
+    {
+      patron: /\bPICC\b|cat[eé]ter\s+central\s+de\s+inserci[oó]n\s+perif[eé]rica/i,
+      nombre: 'PICC (Catéter central de inserción periférica)',
+      requiere_autorizacion: true,
+      facturacion_aparte: true
+    },
+    {
+      patron: /cat[eé]ter\s+Swan-Ganz/i,
+      nombre: 'Catéter Swan-Ganz',
+      requiere_autorizacion: true,
+      facturacion_aparte: true
+    },
+    {
+      patron: /cat[eé]ter\s+epidural/i,
+      nombre: 'Catéter epidural',
+      requiere_autorizacion: false,
+      facturacion_aparte: true
+    }
+  ],
+  procedimientos_especiales: [
+    {
+      patron: /drenaje\s+tor[aá]cico|tubo\s+de\s+t[oó]rax/i,
+      nombre: 'Drenaje torácico',
+      requiere_autorizacion: false,
+      facturacion_aparte: true
+    },
+    {
+      patron: /traqueostom[ií]a/i,
+      nombre: 'Traqueostomía',
+      requiere_autorizacion: true,
+      facturacion_aparte: true
+    },
+    {
+      patron: /gastrostom[ií]a/i,
+      nombre: 'Gastrostomía',
+      requiere_autorizacion: true,
+      facturacion_aparte: true
+    }
+  ]
+};
+
+function detectarPracticasExcluidas(texto: string): PracticaExcluida[] {
+  const practicasDetectadas: PracticaExcluida[] = [];
+
+  for (const [categoriaKey, practicas] of Object.entries(PRACTICAS_EXCLUIDAS_CONFIG)) {
+    for (const practica of practicas) {
+      let match;
+      const regex = new RegExp(practica.patron.source, practica.patron.flags + 'g');
+
+      while ((match = regex.exec(texto)) !== null) {
+        // Extraer contexto alrededor
+        const inicio = Math.max(0, match.index - 500);
+        const fin = Math.min(texto.length, match.index + 500);
+        const contexto = texto.substring(inicio, fin);
+
+        // Determinar ubicación del documento
+        let ubicacion: PracticaExcluida['ubicacion_documento'] = 'evolucion';
+        if (/foja\s+ambulatoria/i.test(contexto)) {
+          ubicacion = 'foja_ambulatoria';
+        } else if (/interconsulta/i.test(contexto)) {
+          ubicacion = 'interconsulta';
+        }
+
+        // Extraer fecha
+        const fechaMatch = contexto.match(/(\d{1,2}\/\d{1,2}\/\d{4})/);
+        const fecha = fechaMatch ? fechaMatch[1] : undefined;
+
+        // Generar advertencia
+        let advertencia = `⚠️ ${practica.nombre} detectada`;
+        if (practica.requiere_autorizacion && practica.facturacion_aparte) {
+          advertencia += ' - REQUIERE AUTORIZACIÓN PREVIA y se factura por separado del módulo';
+        } else if (practica.requiere_autorizacion) {
+          advertencia += ' - REQUIERE AUTORIZACIÓN PREVIA';
+        } else if (practica.facturacion_aparte) {
+          advertencia += ' - Se factura por separado del módulo';
+        }
+        if ('codigo' in practica && practica.codigo) {
+          advertencia += ` (Código: ${practica.codigo})`;
+        }
+
+        const categoria = categoriaKey === 'punciones' ? 'puncion' :
+          categoriaKey === 'cateteres' ? 'cateter' :
+            'procedimiento_especial';
+
+        practicasDetectadas.push({
+          tipo: practica.nombre,
+          categoria: categoria as PracticaExcluida['categoria'],
+          fecha,
+          ubicacion_documento: ubicacion,
+          requiere_autorizacion: practica.requiere_autorizacion,
+          facturacion_aparte: practica.facturacion_aparte,
+          codigo_nomenclador: 'codigo' in practica ? practica.codigo : undefined,
+          advertencia
+        });
+      }
+    }
+  }
+
+  return practicasDetectadas;
+}
+
+/* =========================
+   NUEVO: Endoscopías
+   ========================= */
+const PATRONES_ENDOSCOPIA = [
+  /videoendoscop[ií]a\s+digestiva\s+(alta|baja)/i,
+  /videocolonoscop[ií]a/i,
+  /colonoscop[ií]a/i,
+  /gastroscop[ií]a/i,
+  /esofagogastroduodenoscop[ií]a/i,
+  /\bVEDA\b/i,
+  /\bVCC\b/i,
+  /broncoscop[ií]a/i,
+  /cistoscop[ií]a/i,
+  /histeroscop[ií]a/i,
+  /artroscop[ií]a/i
+];
+
+function detectarEndoscopias(texto: string): FojaEndoscopia[] {
+  const endoscopias: FojaEndoscopia[] = [];
+
+  for (const patron of PATRONES_ENDOSCOPIA) {
+    let match;
+    const regex = new RegExp(patron.source, patron.flags + 'g');
+
+    while ((match = regex.exec(texto)) !== null) {
+      const bloque = texto.substring(match.index, match.index + 3000);
+
+      // Extraer datos
+      const fechaMatch = bloque.match(/(\d{1,2}\/\d{1,2}\/\d{4})/);
+      const fecha = fechaMatch ? fechaMatch[1] : '';
+
+      const horaInicioMatch = bloque.match(/hora\s+inicio[:\s]*(\d{1,2}:\d{2})/i);
+      const hora_inicio = horaInicioMatch ? horaInicioMatch[1] : undefined;
+
+      const horaFinMatch = bloque.match(/hora\s+fin[:\s]*(\d{1,2}:\d{2})/i);
+      const hora_fin = horaFinMatch ? horaFinMatch[1] : undefined;
+
+      const endoscopistaMatch = bloque.match(/endoscopista[:\s]*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s,]{5,40})/i);
+      const endoscopistaNombre = endoscopistaMatch ? endoscopistaMatch[1].trim() : '';
+
+      const matriculaMatch = bloque.match(/(?:mp|mn|matr[ií]cula)[:\s]*(\d{3,6})/i);
+      const matricula = matriculaMatch ? matriculaMatch[1] : undefined;
+
+      const hallazgosMatch = bloque.match(/hallazgos?[:\s]*([^\n]{10,300})/i);
+      const hallazgos = hallazgosMatch ? hallazgosMatch[1].trim() : undefined;
+
+      const biopsias = /biopsia|muestra\s+histol[oó]gica/i.test(bloque);
+
+      const errores: string[] = [];
+      if (!endoscopistaNombre) errores.push('Falta nombre del endoscopista');
+      if (!matricula) errores.push('Falta matrícula del endoscopista');
+      if (!fecha) errores.push('Falta fecha del procedimiento');
+
+      endoscopias.push({
+        tipo: 'endoscopia',
+        procedimiento: match[0],
+        fecha,
+        hora_inicio,
+        hora_fin,
+        endoscopista: { nombre: endoscopistaNombre, matricula },
+        hallazgos,
+        biopsias,
+        errores
+      });
+    }
+  }
+
+  return endoscopias;
+}
+
+/* =========================
+   NUEVO: Prácticas Ambulatorias
+   ========================= */
+const PATRONES_PRACTICAS_AMBULATORIAS = [
+  /curaci[oó]n/i,
+  /extracci[oó]n\s+de\s+puntos/i,
+  /retiro\s+de\s+drenaje/i,
+  /cambio\s+de\s+sonda/i,
+  /infiltraci[oó]n/i,
+  /bloqueo\s+nervioso/i
+];
+
+function detectarPracticasAmbulatorias(
+  texto: string,
+  fechaIngreso: Date,
+  fechaAlta: Date
+): PracticaAmbulatoria[] {
+  const practicas: PracticaAmbulatoria[] = [];
+
+  for (const patron of PATRONES_PRACTICAS_AMBULATORIAS) {
+    let match;
+    const regex = new RegExp(patron.source, patron.flags + 'g');
+
+    while ((match = regex.exec(texto)) !== null) {
+      const bloque = texto.substring(match.index - 500, match.index + 500);
+
+      const fechaMatch = bloque.match(/(\d{1,2}\/\d{1,2}\/\d{4})/);
+      if (fechaMatch) {
+        const [d, m, a] = fechaMatch[1].split('/');
+        const fechaPractica = new Date(Number(a), Number(m) - 1, Number(d));
+
+        // Verificar si está en rango de internación
+        if (fechaPractica >= fechaIngreso && fechaPractica <= fechaAlta) {
+          const horaMatch = bloque.match(/(\d{1,2}:\d{2})/);
+
+          practicas.push({
+            tipo: match[0],
+            fecha: fechaMatch[1],
+            hora: horaMatch ? horaMatch[1] : undefined,
+            ubicacion: 'durante_internacion',
+            requiere_autorizacion: true,
+            errores: []
+          });
+        }
+      }
+    }
+  }
+
+  return practicas;
 }
 
 /* =========================
@@ -790,21 +1555,21 @@ function analizarFojaQuirurgica(texto: string): ResultadosFoja {
   // Analizar cada ocurrencia para encontrar foja quirúrgicas válidas
   for (const ocurrencia of ocurrenciasFiltradas) {
     const inicio = ocurrencia.index;
-    
+
     // Buscar fecha ANTES de "foja quirúrgica" (hasta 3000 caracteres antes)
     const inicioBusqueda = Math.max(0, inicio - 3000);
     const bloqueAnterior = texto.substring(inicioBusqueda, inicio);
-    
+
     // Buscar patrones de fecha en el bloque anterior (visita, intervención planificada, etc.)
     const patronesFechaAnterior = [
       /visita\s+(\d{1,2}\/\d{1,2}\/\d{4})\s+(\d{1,2}:\d{2})/i,
       /intervenci[oó]n\s+planificada\s+para\s+(\d{1,2}\/\d{1,2}\/\d{4})\s+(\d{1,2}:\d{2})/i,
       /(\d{1,2}\/\d{1,2}\/\d{4})\s+(\d{1,2}:\d{2})/i, // Fecha y hora juntas
     ];
-    
+
     let fechaEncontradaAntes: string | null = null;
     let horaEncontradaAntes: string | null = null;
-    
+
     for (const patron of patronesFechaAnterior) {
       const match = bloqueAnterior.match(patron);
       if (match) {
@@ -813,21 +1578,21 @@ function analizarFojaQuirurgica(texto: string): ResultadosFoja {
         break;
       }
     }
-    
+
     // Analizar un bloque más amplio (4000 caracteres) para detectar tipo de procedimiento y equipo
     const trozoValidacion = texto.substring(inicio, Math.min(inicio + 4000, texto.length));
-    
+
     // Detectar si es una endoscopía o procedimiento endoscópico
     const esEndoscopia = /\b(endoscop[ií]a|gastroscop[ií]a|colonoscop[ií]a|broncoscop[ií]a|videoesofagogastr[oó]gica|videoesofagogastroduodenoscop[ií]a|video\s*esofagogastr[oó]gica)\b/i.test(trozoValidacion);
-    
+
     // Buscar miembros del equipo quirúrgico en el bloque de validación
     const tieneAnestesistaCerca = /anestesista[:\s]*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ,\s]{2,40})/i.test(trozoValidacion);
     const tieneEndoscopistaCerca = /endoscopista[:\s]*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ,\s]{2,40})/i.test(trozoValidacion);
     const tieneCirujanoCerca = /cirujano[:\s]*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ,\s]{2,40})/i.test(trozoValidacion);
-    
+
     let esValida = false;
     let rangoBusqueda = 5000; // Rango por defecto para cirugías normales
-    
+
     // Validación flexible: aceptar si tiene Anestesista (para procedimientos menores)
     // O si tiene Cirujano + Anestesista (para cirugías mayores)
     if (tieneAnestesistaCerca) {
@@ -851,12 +1616,12 @@ function analizarFojaQuirurgica(texto: string): ResultadosFoja {
       }
       // Para cirugías normales sin Anestesista, no es válida (solo referencia)
     }
-    
+
     // Si no es válida, ignorar esta ocurrencia
     if (!esValida) {
       continue;
     }
-    
+
     // Analizar un bloque del tamaño apropiado según el tipo de procedimiento
     const trozo = texto.substring(inicio, Math.min(inicio + rangoBusqueda, texto.length));
 
@@ -904,7 +1669,7 @@ function analizarFojaQuirurgica(texto: string): ResultadosFoja {
         if (!m[1]) continue;
 
         const palabrasFinNombre = [
-          'cirujano', 'cirug', 'anestesista', 'endoscopista', 'instrumentador', 'ayudante', 
+          'cirujano', 'cirug', 'anestesista', 'endoscopista', 'instrumentador', 'ayudante',
           'responsable', 'primer', 'tipo de visita', 'tipo', 'fecha', 'hora',
           'diagnostico', 'procedimiento', 'matricula', 'especialidad'
         ];
@@ -933,15 +1698,15 @@ function analizarFojaQuirurgica(texto: string): ResultadosFoja {
 
           if (rol === 'ayudante') {
             const yaExisteResidencia = foja.equipo_quirurgico.some(
-              e => e.rol === 'ayudante_residencia' && 
-                   (e.nombre === nombre || e.nombre.toLowerCase().includes(nombre.toLowerCase()) || 
-                    nombre.toLowerCase().includes(e.nombre.toLowerCase()))
+              e => e.rol === 'ayudante_residencia' &&
+                (e.nombre === nombre || e.nombre.toLowerCase().includes(nombre.toLowerCase()) ||
+                  nombre.toLowerCase().includes(e.nombre.toLowerCase()))
             );
             if (yaExisteResidencia) {
               continue;
             }
           }
-          
+
           if (!vistos.has(key)) {
             vistos.add(key);
             foja.equipo_quirurgico.push({ rol, nombre });
@@ -1018,7 +1783,7 @@ function analizarFojaQuirurgica(texto: string): ResultadosFoja {
         "❌ CRÍTICO: Hora de comienzo no encontrada en foja quirúrgica"
       );
     }
-    
+
     // Usar fecha y hora encontradas ANTES de "foja quirúrgica" si no se encontraron en el bloque
     if (fechaEncontradaAntes && !foja.fecha_cirugia) {
       foja.fecha_cirugia = fechaEncontradaAntes;
@@ -1049,9 +1814,9 @@ function analizarFojaQuirurgica(texto: string): ResultadosFoja {
     const tieneCirujano = foja.equipo_quirurgico.some(e => e.rol === 'cirujano');
     const tieneAnestesista = foja.equipo_quirurgico.some(e => e.rol === 'anestesista');
     const tieneEndoscopista = foja.equipo_quirurgico.some(e => e.rol === 'endoscopista');
-    
+
     let esValidaFinal = false;
-    
+
     // Validación flexible: aceptar si tiene Anestesista (procedimientos menores)
     // O si tiene Cirujano + Anestesista (cirugías mayores)
     if (tieneAnestesista) {
@@ -1067,7 +1832,7 @@ function analizarFojaQuirurgica(texto: string): ResultadosFoja {
       // Cirugía mayor: requiere ambos
       esValidaFinal = true;
     }
-    
+
     // Solo agregar la foja si cumple con los requisitos
     if (esValidaFinal) {
       // Verificar si ya existe una foja con la misma fecha y mismo equipo (evitar duplicados)
@@ -1097,7 +1862,7 @@ function analizarFojaQuirurgica(texto: string): ResultadosFoja {
         }
         return false;
       });
-      
+
       if (!esDuplicada) {
         resultados.fojas.push(foja);
       }
@@ -1129,7 +1894,7 @@ function generarListaDiasInternacion(
   const inicio = startOfDay(ingreso);
   const fin = startOfDay(alta);
   const MS_DIA = 1000 * 60 * 60 * 24;
-  
+
   // Crear un mapa de fechas de cirugía para acceso rápido
   const fechasCirugia = new Set<string>();
   for (const foja of resultadosFoja.fojas) {
@@ -1149,7 +1914,7 @@ function generarListaDiasInternacion(
       }
     }
   }
-  
+
   // Crear un mapa de estudios por fecha
   const estudiosPorFecha = new Map<string, Array<{ tipo: string; categoria: string }>>();
   for (const estudio of estudios) {
@@ -1163,28 +1928,28 @@ function generarListaDiasInternacion(
       });
     }
   }
-  
+
   let fechaActual = new Date(inicio);
   while (fechaActual <= fin) {
     const dia = String(fechaActual.getDate()).padStart(2, "0");
     const mes = String(fechaActual.getMonth() + 1).padStart(2, "0");
     const anio = fechaActual.getFullYear();
     const fechaStr = `${dia}/${mes}/${anio}`;
-    
+
     const tieneEvolucion = diasConEvolucion.has(fechaStr);
     const tieneFojaQuirurgica = fechasCirugia.has(fechaStr);
     const estudiosDelDia = estudiosPorFecha.get(fechaStr) || [];
-    
+
     listaDias.push({
       fecha: fechaStr,
       tieneEvolucion,
       tieneFojaQuirurgica,
       estudios: estudiosDelDia,
     });
-    
+
     fechaActual = new Date(fechaActual.getTime() + MS_DIA);
   }
-  
+
   return listaDias;
 }
 
@@ -1256,8 +2021,8 @@ function extraerEstudios(texto: string) {
       paginasEstudiosEntregados.add(paginaActual);
     }
 
-    if (/(evoluci[oó]n|visita|alta\s+m[eé]dica|epicrisis|foja|cirug[íi]a)/i.test(linea) && 
-        !dentroDeExamenesComplementarios && !dentroDeEstudiosEntregados) {
+    if (/(evoluci[oó]n|visita|alta\s+m[eé]dica|epicrisis|foja|cirug[íi]a)/i.test(linea) &&
+      !dentroDeExamenesComplementarios && !dentroDeEstudiosEntregados) {
       dentroDeExamenesComplementarios = false;
       dentroDeEstudiosEntregados = false;
     }
@@ -1276,13 +2041,13 @@ function extraerEstudios(texto: string) {
 
   const tipoDetectado = (base: string, linea: string) => {
     const tiposSinLugar = [
-      "Kinesiología", 
-      "Perfil hepático", 
-      "Hemograma", 
-      "PCR", 
-      "VSG", 
-      "Glucemia", 
-      "Creatinina", 
+      "Kinesiología",
+      "Perfil hepático",
+      "Hemograma",
+      "PCR",
+      "VSG",
+      "Glucemia",
+      "Creatinina",
       "Urea",
       "Orina completa",
       "Ionograma"
@@ -1331,8 +2096,8 @@ function extraerEstudios(texto: string) {
     const l = lRaw.trim();
     if (!l) continue;
 
-    const esExamenExterno = paginasExamenesComplementarios.has(paginaActual) || 
-                           paginasEstudiosEntregados.has(paginaActual);
+    const esExamenExterno = paginasExamenesComplementarios.has(paginaActual) ||
+      paginasEstudiosEntregados.has(paginaActual);
 
     for (const [re, label] of patronesProc) {
       if (re.test(l) && label === "Kinesiología") {
@@ -1715,6 +2480,30 @@ Deno.serve(async (req: Request) => {
       conteo: estudiosConteo,
     } = extraerEstudios(pdfText);
 
+    // ===== NUEVO: Análisis de Terapia Intensiva/Intermedia =====
+    const resultadoTerapia = analizarTerapia(
+      pdfText,
+      ingreso,
+      fechaAlta,
+      datosPaciente.estaEnUCI
+    );
+
+    // ===== NUEVO: Detectar Interconsultas =====
+    const interconsultas = extraerInterconsultas(pdfText);
+
+    // ===== NUEVO: Detectar Prácticas Excluidas =====
+    const practicasExcluidas = detectarPracticasExcluidas(pdfText);
+
+    // ===== NUEVO: Detectar Endoscopías =====
+    const endoscopias = detectarEndoscopias(pdfText);
+
+    // ===== NUEVO: Detectar Prácticas Ambulatorias =====
+    const practicasAmbulatorias = detectarPracticasAmbulatorias(
+      pdfText,
+      ingreso,
+      fechaAlta
+    );
+
     // Recolectar todos los errores de foja para pasar a comunicaciones
     const todosErroresFoja: string[] = [...resultadosFoja.errores_generales];
     for (const foja of resultadosFoja.fojas) {
@@ -1777,21 +2566,21 @@ Deno.serve(async (req: Request) => {
         fojas: resultadosFoja.fojas,
         errores_generales: resultadosFoja.errores_generales,
         // Estructura antigua para compatibilidad con frontend actual
-        bisturi_armonico: resultadosFoja.fojas.length > 0 
-          ? resultadosFoja.fojas[0].bisturi_armonico 
-          : (resultadosFoja.fojas.some(f => f.bisturi_armonico === "SI") ? "SI" : 
-             resultadosFoja.fojas.some(f => f.bisturi_armonico === "NO") ? "NO" : null),
-        equipo_quirurgico: resultadosFoja.fojas.length > 0 
-          ? resultadosFoja.fojas[0].equipo_quirurgico 
+        bisturi_armonico: resultadosFoja.fojas.length > 0
+          ? resultadosFoja.fojas[0].bisturi_armonico
+          : (resultadosFoja.fojas.some(f => f.bisturi_armonico === "SI") ? "SI" :
+            resultadosFoja.fojas.some(f => f.bisturi_armonico === "NO") ? "NO" : null),
+        equipo_quirurgico: resultadosFoja.fojas.length > 0
+          ? resultadosFoja.fojas[0].equipo_quirurgico
           : [],
-        fecha_cirugia: resultadosFoja.fojas.length > 0 
-          ? resultadosFoja.fojas[0].fecha_cirugia 
+        fecha_cirugia: resultadosFoja.fojas.length > 0
+          ? resultadosFoja.fojas[0].fecha_cirugia
           : null,
-        hora_inicio: resultadosFoja.fojas.length > 0 
-          ? resultadosFoja.fojas[0].hora_inicio 
+        hora_inicio: resultadosFoja.fojas.length > 0
+          ? resultadosFoja.fojas[0].hora_inicio
           : null,
-        hora_fin: resultadosFoja.fojas.length > 0 
-          ? resultadosFoja.fojas[0].hora_fin 
+        hora_fin: resultadosFoja.fojas.length > 0
+          ? resultadosFoja.fojas[0].hora_fin
           : null,
         errores: todosErroresFoja,
       } as any, // Type assertion para permitir estructura híbrida
@@ -1804,6 +2593,19 @@ Deno.serve(async (req: Request) => {
       totalErrores,
       estado: totalErrores > 0 ? "Pendiente de corrección" : "Aprobado",
       listaDiasInternacion, // Nueva lista de días con su estado
+      // ===== NUEVO: Datos de Terapia Intensiva/Intermedia =====
+      resultadoTerapia: datosPaciente.estaEnUCI ? resultadoTerapia : undefined,
+      diasTerapiaIntensiva: resultadoTerapia.diasTerapiaIntensiva,
+      diasTerapiaIntermedia: resultadoTerapia.diasTerapiaIntermedia,
+      diasInternacionGeneral: resultadoTerapia.diasInternacionGeneral,
+      // ===== NUEVO: Interconsultas =====
+      interconsultas,
+      // ===== NUEVO: Prácticas Excluidas =====
+      practicasExcluidas,
+      // ===== NUEVO: Endoscopías =====
+      endoscopias,
+      // ===== NUEVO: Prácticas Ambulatorias =====
+      practicasAmbulatorias,
     };
 
     // Persistencia
@@ -1827,8 +2629,8 @@ Deno.serve(async (req: Request) => {
         errores_foja_quirurgica: todosErroresFoja.length,
         errores_alta_medica: pacienteInternado ? 0 : erroresAltaMedica.length,
         errores_epicrisis: pacienteInternado ? 0 : erroresEpicrisis.length,
-        bisturi_armonico: resultadosFoja.fojas.some(f => f.bisturi_armonico === "SI") ? "SI" : 
-                         resultadosFoja.fojas.some(f => f.bisturi_armonico === "NO") ? "NO" : "No determinado",
+        bisturi_armonico: resultadosFoja.fojas.some(f => f.bisturi_armonico === "SI") ? "SI" :
+          resultadosFoja.fojas.some(f => f.bisturi_armonico === "NO") ? "NO" : "No determinado",
         estado: totalErrores > 0 ? "Pendiente de corrección" : "Aprobado",
         estudios_total: estudiosConteo.total,
         estudios_imagenes: estudiosConteo.imagenes,
@@ -1848,7 +2650,7 @@ Deno.serve(async (req: Request) => {
             tipo: "Foja Quirúrgica",
             descripcion: e,
           })),
-          ...resultadosFoja.fojas.flatMap((foja, idx) => 
+          ...resultadosFoja.fojas.flatMap((foja, idx) =>
             foja.errores.map((e) => ({
               tipo: `Foja Quirúrgica ${resultadosFoja.fojas.length > 1 ? `#${idx + 1}` : ''}`,
               descripcion: e,
@@ -1983,7 +2785,7 @@ Deno.serve(async (req: Request) => {
     // Errores generales de foja (no asociados a una foja específica)
     if (resultadosFoja.errores_generales?.length) {
       // Para errores generales, usar todos los cirujanos de todas las foja
-      const todosCirujanos = resultadosFoja.fojas.flatMap(f => 
+      const todosCirujanos = resultadosFoja.fojas.flatMap(f =>
         f.equipo_quirurgico.filter(m => m.rol === "cirujano")
       );
       const cirujanosUnicos = Array.from(new Set(todosCirujanos.map(c => c.nombre)));
@@ -1996,7 +2798,7 @@ Deno.serve(async (req: Request) => {
 
     if (!pacienteInternado && erroresEpicrisis?.length) {
       // Para epicrisis, usar todos los cirujanos de todas las foja
-      const todosCirujanos = resultadosFoja.fojas.flatMap(f => 
+      const todosCirujanos = resultadosFoja.fojas.flatMap(f =>
         f.equipo_quirurgico.filter(m => m.rol === "cirujano")
       );
       const cirujanosUnicos = Array.from(new Set(todosCirujanos.map(c => c.nombre)));
@@ -2009,7 +2811,7 @@ Deno.serve(async (req: Request) => {
 
     if (!pacienteInternado && erroresAltaMedica?.length) {
       // Para alta médica, usar todos los cirujanos de todas las foja
-      const todosCirujanos = resultadosFoja.fojas.flatMap(f => 
+      const todosCirujanos = resultadosFoja.fojas.flatMap(f =>
         f.equipo_quirurgico.filter(m => m.rol === "cirujano")
       );
       const cirujanosUnicos = Array.from(new Set(todosCirujanos.map(c => c.nombre)));
