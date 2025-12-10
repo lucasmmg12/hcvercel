@@ -1,0 +1,95 @@
+=================================================================
+INSTRUCCIONES PARA ACTUALIZAR SUPABASE EDGE FUNCTION
+=================================================================
+
+1. Ve a: https://supabase.com/dashboard
+2. Selecciona tu proyecto
+3. Ve a "Edge Functions" en el menú lateral
+4. Busca la función "auditar-pdf"
+5. Haz clic en "Edit" o el ícono de editar
+6. Busca la función "extractIngresoAlta" (aproximadamente línea 215)
+7. REEMPLAZA TODA LA FUNCIÓN con el código de abajo:
+
+=================================================================
+CÓDIGO A COPIAR (líneas 215-270 aproximadamente):
+=================================================================
+
+function extractIngresoAlta(text: string): { ingreso: Date | null; alta: Date | null } {
+  let ingreso: Date | null = null;
+  let alta: Date | null = null;
+
+  // Normalizar el texto para facilitar la búsqueda
+  const textoNormalizado = text.replace(/\s+/g, ' ');
+
+  // Buscar "Fecha Ingreso:" o "Fecha de Ingreso:" seguido de fecha y hora
+  // Formato: 22/8/2025 08:29:36 o 22/08/2025, 05:29 a. m.
+  const patronIngreso = /(?:fecha\s+(?:de\s+)?ingreso|ingreso)[:\s]+(\d{1,2}\/\d{1,2}\/\d{2,4})\s+(\d{1,2}:\d{1,2}(?::\d{1,2})?)/i;
+  const matchIngreso = textoNormalizado.match(patronIngreso);
+  
+  if (matchIngreso) {
+    const fecha = matchIngreso[1];
+    const hora = matchIngreso[2];
+    const dt = makeDate(fecha, hora);
+    if (!Number.isNaN(dt.getTime())) {
+      ingreso = dt;
+    }
+  }
+
+  // Si no encontró con hora, buscar solo fecha
+  if (!ingreso) {
+    const patronIngresoSoloFecha = /(?:fecha\s+(?:de\s+)?ingreso|ingreso)[:\s]+(\d{1,2}\/\d{1,2}\/\d{2,4})/i;
+    const matchIngresoFecha = textoNormalizado.match(patronIngresoSoloFecha);
+    if (matchIngresoFecha) {
+      const dt = makeDate(matchIngresoFecha[1]);
+      if (!Number.isNaN(dt.getTime())) {
+        ingreso = dt;
+      }
+    }
+  }
+
+  // Buscar "Fecha Alta:" o "Fecha de Alta:" seguido de fecha y hora
+  const patronAlta = /(?:fecha\s+(?:de\s+)?alta|alta)[:\s]+(\d{1,2}\/\d{1,2}\/\d{2,4})\s+(\d{1,2}:\d{1,2}(?::\d{1,2})?)/i;
+  const matchAlta = textoNormalizado.match(patronAlta);
+  
+  if (matchAlta) {
+    const fecha = matchAlta[1];
+    const hora = matchAlta[2];
+    const dt = makeDate(fecha, hora);
+    if (!Number.isNaN(dt.getTime())) {
+      alta = dt;
+    }
+  }
+
+  // Si no encontró con hora, buscar solo fecha
+  if (!alta) {
+    const patronAltaSoloFecha = /(?:fecha\s+(?:de\s+)?alta|alta)[:\s]+(\d{1,2}\/\d{1,2}\/\d{2,4})/i;
+    const matchAltaFecha = textoNormalizado.match(patronAltaSoloFecha);
+    if (matchAltaFecha) {
+      const dt = makeDate(matchAltaFecha[1]);
+      if (!Number.isNaN(dt.getTime())) {
+        alta = dt;
+      }
+    }
+  }
+
+  return { ingreso, alta };
+}
+
+=================================================================
+DESPUÉS DE COPIAR:
+=================================================================
+
+8. Haz clic en "Deploy" o "Save"
+9. Espera a que se despliegue (1-2 minutos)
+10. Prueba subiendo el PDF nuevamente
+
+=================================================================
+VERIFICACIÓN:
+=================================================================
+
+Deberías ver:
+✅ Fecha de Ingreso: 22/08/2025, 08:29 (hora correcta)
+✅ Fecha de Alta: 17/09/2025, 10:49 (hora correcta)
+✅ Estudios abreviados: ECG, TAC, RX, etc.
+
+=================================================================
