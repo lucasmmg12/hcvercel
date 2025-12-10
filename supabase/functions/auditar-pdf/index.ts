@@ -1567,6 +1567,142 @@ function detectarPracticasAmbulatorias(
 }
 
 /* =========================
+   NUEVO: Extracción de Estudios y Generación de Lista de Días
+   ========================= */
+
+// Patrones para detectar estudios médicos
+const PATRONES_ESTUDIOS = {
+  imagenes: [
+    { nombre: 'RX de Tórax', patron: /(?:rx|radiograf[ií]a)\s+(?:de\s+)?t[oó]rax/i },
+    { nombre: 'RX de Abdomen', patron: /(?:rx|radiograf[ií]a)\s+(?:de\s+)?abdomen/i },
+    { nombre: 'TAC', patron: /\b(?:TAC|tomograf[ií]a|TC)\b/i },
+    { nombre: 'Ecografía', patron: /ecograf[ií]a/i },
+    { nombre: 'RMN', patron: /\b(?:RMN|resonancia\s+magn[eé]tica)\b/i },
+    { nombre: 'Ecocardiograma', patron: /ecocardiograma/i },
+  ],
+  laboratorio: [
+    { nombre: 'Hemograma', patron: /hemograma/i },
+    { nombre: 'Laboratorio', patron: /laboratorio(?:\s+completo)?/i },
+    { nombre: 'Gasometría', patron: /gasom[eé]tria/i },
+    { nombre: 'Cultivos', patron: /cultivos?/i },
+    { nombre: 'PCR', patron: /\bPCR\b/i },
+    { nombre: 'Procalcitonina', patron: /procalcitonina/i },
+  ],
+  procedimientos: [
+    { nombre: 'ECG', patron: /\b(?:ECG|electrocardiograma)\b/i },
+    { nombre: 'EEG', patron: /\b(?:EEG|electroencefalograma)\b/i },
+    { nombre: 'Espirometría', patron: /espirometr[ií]a/i },
+  ],
+};
+
+interface EstudioDetectado {
+  tipo: string;
+  fecha: string;
+  categoria: 'imagenes' | 'laboratorio' | 'procedimientos';
+}
+
+function extraerEstudios(texto: string): EstudioDetectado[] {
+  const estudios: EstudioDetectado[] = [];
+  const estudiosVistos = new Set<string>(); // Para evitar duplicados
+
+  for (const [categoria, listaEstudios] of Object.entries(PATRONES_ESTUDIOS)) {
+    for (const estudio of listaEstudios) {
+      let match;
+      const regex = new RegExp(estudio.patron.source, estudio.patron.flags + 'g');
+
+      while ((match = regex.exec(texto)) !== null) {
+        // Extraer contexto para buscar fecha
+        const inicio = Math.max(0, match.index - 300);
+        const fin = Math.min(texto.length, match.index + 300);
+        const contexto = texto.substring(inicio, fin);
+
+        // Buscar fecha en el contexto
+        const fechaMatch = contexto.match(/(\d{1,2}\/\d{1,2}\/\d{4})/);
+        if (fechaMatch) {
+          const fecha = fechaMatch[1];
+          const clave = `${estudio.nombre}-${fecha}`;
+
+          // Evitar duplicados
+          if (!estudiosVistos.has(clave)) {
+            estudiosVistos.add(clave);
+            estudios.push({
+              tipo: estudio.nombre,
+              fecha,
+              categoria: categoria as 'imagenes' | 'laboratorio' | 'procedimientos',
+            });
+          }
+        }
+      }
+    }
+  }
+
+  return estudios;
+}
+
+interface DiaInternacion {
+  fecha: string;
+  tieneEvolucion: boolean;
+  tieneFojaQuirurgica: boolean;
+  estudios: EstudioDetectado[];
+}
+
+function generarListaDiasInternacion(
+  fechaIngreso: Date,
+  fechaAlta: Date,
+  diasConEvolucion: Set<string>,
+  resultadosFoja: any,
+  estudios: EstudioDetectado[]
+): DiaInternacion[] {
+  const dias: DiaInternacion[] = [];
+  const fechaActual = new Date(fechaIngreso);
+
+  // Crear un mapa de estudios por fecha para búsqueda rápida
+  const estudiosPorFecha = new Map<string, EstudioDetectado[]>();
+  for (const estudio of estudios) {
+    if (!estudiosPorFecha.has(estudio.fecha)) {
+      estudiosPorFecha.set(estudio.fecha, []);
+    }
+    estudiosPorFecha.get(estudio.fecha)!.push(estudio);
+  }
+
+  // Crear un set de fechas con foja quirúrgica
+  const fechasConFoja = new Set<string>();
+  if (resultadosFoja && resultadosFoja.fojas) {
+    for (const foja of resultadosFoja.fojas) {
+      if (foja.fecha_cirugia) {
+        fechasConFoja.add(foja.fecha_cirugia);
+      }
+    }
+  }
+
+  // Generar lista de días
+  while (fechaActual <= fechaAlta) {
+    const fechaFormateada = formatearFecha(fechaActual);
+
+    // Formato YYYY-MM-DD para comparación con diasConEvolucion
+    const fechaISO = `${fechaActual.getFullYear()}-${String(fechaActual.getMonth() + 1).padStart(2, '0')}-${String(fechaActual.getDate()).padStart(2, '0')}`;
+
+    dias.push({
+      fecha: fechaFormateada,
+      tieneEvolucion: diasConEvolucion.has(fechaISO),
+      tieneFojaQuirurgica: fechasConFoja.has(fechaFormateada),
+      estudios: estudiosPorFecha.get(fechaFormateada) || [],
+    });
+
+    fechaActual.setDate(fechaActual.getDate() + 1);
+  }
+
+  return dias;
+}
+
+function formatearFecha(fecha: Date): string {
+  const dia = fecha.getDate().toString().padStart(2, '0');
+  const mes = (fecha.getMonth() + 1).toString().padStart(2, '0');
+  const anio = fecha.getFullYear();
+  return `${dia}/${mes}/${anio}`;
+}
+
+/* =========================
    Doctores / Foja
    ========================= */
 function extraerDoctores(texto: string): {
