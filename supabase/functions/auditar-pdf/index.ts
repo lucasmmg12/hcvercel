@@ -1018,31 +1018,63 @@ const ESPECIALIDADES_MEDICAS = [
 function identificarEspecialidad(texto: string): string | null {
   const textoNorm = texto.toLowerCase().trim();
 
+  // Primero intentar coincidencias exactas con límites de palabra
   for (const esp of ESPECIALIDADES_MEDICAS) {
-    if (textoNorm.includes(esp)) {
+    const patron = new RegExp(`\\b${esp}\\b`, 'i');
+    if (patron.test(textoNorm)) {
       return esp.charAt(0).toUpperCase() + esp.slice(1);
     }
   }
 
-  // Abreviaturas comunes
-  const abreviaturas: Record<string, string> = {
-    'cardio': 'Cardiología',
-    'neuro': 'Neurología',
-    'traumato': 'Traumatología',
-    'cir gen': 'Cirugía General',
-    'infecto': 'Infectología',
-    'nefro': 'Nefrología',
-    'gastro': 'Gastroenterología',
-    'hemato': 'Hematología',
-    'onco': 'Oncología',
-    'neumo': 'Neumología',
-    'endocrino': 'Endocrinología',
-    'uti': 'Terapia Intensiva',
-    'uci': 'Terapia Intensiva'
-  };
+  // Abreviaturas y variantes comunes (ordenadas por especificidad)
+  const patronesEspecialidad: Array<[RegExp, string]> = [
+    // Especialidades completas primero (más específicas)
+    [/\bhematolog[ií]a\b/i, 'Hematología'],
+    [/\bgastroenterolog[ií]a\b/i, 'Gastroenterología'],
+    [/\bcardiolog[ií]a\b/i, 'Cardiología'],
+    [/\bneurolog[ií]a\b/i, 'Neurología'],
+    [/\btraumatolog[ií]a\b/i, 'Traumatología'],
+    [/\binfectolog[ií]a\b/i, 'Infectología'],
+    [/\bnefrolog[ií]a\b/i, 'Nefrología'],
+    [/\boncolog[ií]a\b/i, 'Oncología'],
+    [/\bneumolog[ií]a\b/i, 'Neumología'],
+    [/\bendocrinolog[ií]a\b/i, 'Endocrinología'],
+    [/\bdermatolog[ií]a\b/i, 'Dermatología'],
+    [/\boftalmolog[ií]a\b/i, 'Oftalmología'],
+    [/\botorrinolaringolog[ií]a\b/i, 'Otorrinolaringología'],
+    [/\burolog[ií]a\b/i, 'Urología'],
+    [/\bginecolog[ií]a\b/i, 'Ginecología'],
+    [/\bpediatr[ií]a\b/i, 'Pediatría'],
+    [/\bpsiquiatr[ií]a\b/i, 'Psiquiatría'],
+    [/\banestesiolog[ií]a\b/i, 'Anestesiología'],
+    [/\bradiolog[ií]a\b/i, 'Radiología'],
+    [/\bcirug[ií]a\s+general\b/i, 'Cirugía General'],
+    [/\bcirug[ií]a\s+cardiovascular\b/i, 'Cirugía Cardiovascular'],
+    [/\bcirug[ií]a\s+tor[aá]cica\b/i, 'Cirugía Torácica'],
+    [/\bterapia\s+intensiva\b/i, 'Terapia Intensiva'],
+    [/\bmedicina\s+interna\b/i, 'Medicina Interna'],
+    [/\bmedicina\s+familiar\b/i, 'Medicina Familiar'],
 
-  for (const [abrev, especialidad] of Object.entries(abreviaturas)) {
-    if (textoNorm.includes(abrev)) {
+    // Abreviaturas (después de las completas)
+    [/\bhemato\b/i, 'Hematología'],
+    [/\bgastro\b/i, 'Gastroenterología'],
+    [/\bcardio\b/i, 'Cardiología'],
+    [/\bneuro\b/i, 'Neurología'],
+    [/\btraumato\b/i, 'Traumatología'],
+    [/\binfecto\b/i, 'Infectología'],
+    [/\bnefro\b/i, 'Nefrología'],
+    [/\bonco\b/i, 'Oncología'],
+    [/\bneumo\b/i, 'Neumología'],
+    [/\bendocrino\b/i, 'Endocrinología'],
+    [/\bcir\s*gen\b/i, 'Cirugía General'],
+    [/\buti\b/i, 'Terapia Intensiva'],
+    [/\buci\b/i, 'Terapia Intensiva'],
+    [/\borl\b/i, 'Otorrinolaringología'],
+  ];
+
+  // Buscar coincidencias en orden (las más específicas primero)
+  for (const [patron, especialidad] of patronesEspecialidad) {
+    if (patron.test(textoNorm)) {
       return especialidad;
     }
   }
