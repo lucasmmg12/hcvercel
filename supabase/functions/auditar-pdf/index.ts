@@ -1601,44 +1601,6 @@ interface EstudioDetectado {
   categoria: 'imagenes' | 'laboratorio' | 'procedimientos';
 }
 
-function extraerEstudios(texto: string): EstudioDetectado[] {
-  const estudios: EstudioDetectado[] = [];
-  const estudiosVistos = new Set<string>(); // Para evitar duplicados
-
-  for (const [categoria, listaEstudios] of Object.entries(PATRONES_ESTUDIOS)) {
-    for (const estudio of listaEstudios) {
-      let match;
-      const regex = new RegExp(estudio.patron.source, estudio.patron.flags + 'g');
-
-      while ((match = regex.exec(texto)) !== null) {
-        // Extraer contexto para buscar fecha
-        const inicio = Math.max(0, match.index - 300);
-        const fin = Math.min(texto.length, match.index + 300);
-        const contexto = texto.substring(inicio, fin);
-
-        // Buscar fecha en el contexto
-        const fechaMatch = contexto.match(/(\d{1,2}\/\d{1,2}\/\d{4})/);
-        if (fechaMatch) {
-          const fecha = fechaMatch[1];
-          const clave = `${estudio.nombre}-${fecha}`;
-
-          // Evitar duplicados
-          if (!estudiosVistos.has(clave)) {
-            estudiosVistos.add(clave);
-            estudios.push({
-              tipo: estudio.nombre,
-              fecha,
-              categoria: categoria as 'imagenes' | 'laboratorio' | 'procedimientos',
-            });
-          }
-        }
-      }
-    }
-  }
-
-  return estudios;
-}
-
 /* =========================
    Doctores / Foja
    ========================= */
@@ -2681,8 +2643,7 @@ Deno.serve(async (req: Request) => {
     const doctores = extraerDoctores(pdfText);
     const resultadosFoja = analizarFojaQuirurgica(pdfText);
 
-    // ===== NUEVO: Extraer estudios =====
-    const estudiosDetectados = extraerEstudios(pdfText);
+
 
     // Validar equipo quirúrgico único para cada foja
     for (const foja of resultadosFoja.fojas) {
@@ -2755,8 +2716,8 @@ Deno.serve(async (req: Request) => {
     );
 
     // Generar lista de días de internación
-    // Convertir estudiosDetectados al formato Estudio esperado
-    const estudiosParaLista = estudiosDetectados.map(e => ({
+    // Convertir estudios al formato esperado
+    const estudiosParaLista = estudios.map(e => ({
       tipo: e.tipo,
       categoria: (e.categoria.charAt(0).toUpperCase() + e.categoria.slice(1)) as any,
       fecha: e.fecha,
