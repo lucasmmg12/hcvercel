@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { supabaseUrl, supabaseAnonKey } from '../lib/supabase';
 
 interface DatosPaciente {
   nombre?: string;
@@ -73,8 +73,7 @@ export async function enviarMensajeWhatsApp(
     console.log(`[${timestamp}] FRONTEND: INICIANDO ENVIO WHATSAPP`);
     console.log(`${'='.repeat(80)}`);
 
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    // Usando variables centralizadas de lib/supabase
 
     console.log('[FRONTEND-CONFIG] Supabase URL:', supabaseUrl);
     console.log('[FRONTEND-CONFIG] Tiene Supabase Key:', !!supabaseAnonKey);
@@ -200,8 +199,7 @@ export async function verificarMensajeEnviado(
   comunicacionIndex: number
 ): Promise<boolean> {
   try {
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    // Usando variables centralizadas de lib/supabase
 
     const response = await fetch(
       `${supabaseUrl}/rest/v1/mensajes_enviados?auditoria_id=eq.${auditoriaId}&comunicacion_index=eq.${comunicacionIndex}&estado=eq.enviado&select=id`,

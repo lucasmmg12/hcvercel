@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Loader2, Plus, Save } from 'lucide-react';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '../lib/supabase';
 
 type UpdateRow = {
   id: string;
@@ -10,11 +10,6 @@ type UpdateRow = {
   status: 'publicado' | 'borrador';
   created_at: string;
 };
-
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL!,
-  import.meta.env.VITE_SUPABASE_ANON_KEY!
-);
 
 export function UpdatesHub() {
   const [tab, setTab] = useState<'listado' | 'nuevo'>('listado');
@@ -97,21 +92,19 @@ export function UpdatesHub() {
         </div>
         <div className="flex gap-2">
           <button
-            className={`px-4 py-2 rounded-lg border transition-all ${
-              tab === 'listado'
-                ? 'bg-green-600 text-white border-green-600 shadow'
-                : 'bg-white text-gray-700 hover:bg-green-50 border-gray-200'
-            }`}
+            className={`px-4 py-2 rounded-lg border transition-all ${tab === 'listado'
+              ? 'bg-green-600 text-white border-green-600 shadow'
+              : 'bg-white text-gray-700 hover:bg-green-50 border-gray-200'
+              }`}
             onClick={() => setTab('listado')}
           >
             Listado
           </button>
           <button
-            className={`px-4 py-2 rounded-lg border transition-all ${
-              tab === 'nuevo'
-                ? 'bg-green-600 text-white border-green-600 shadow'
-                : 'bg-white text-gray-700 hover:bg-green-50 border-gray-200'
-            }`}
+            className={`px-4 py-2 rounded-lg border transition-all ${tab === 'nuevo'
+              ? 'bg-green-600 text-white border-green-600 shadow'
+              : 'bg-white text-gray-700 hover:bg-green-50 border-gray-200'
+              }`}
             onClick={() => setTab('nuevo')}
           >
             <span className="inline-flex items-center gap-2">
@@ -159,9 +152,8 @@ export function UpdatesHub() {
                     </div>
                     <div className="text-right shrink-0">
                       <span
-                        className={`inline-block text-xs px-2 py-1 rounded-full ${
-                          u.status === 'publicado' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
-                        }`}
+                        className={`inline-block text-xs px-2 py-1 rounded-full ${u.status === 'publicado' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
+                          }`}
                       >
                         {u.status}
                       </span>
