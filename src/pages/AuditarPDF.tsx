@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Upload, FileCheck, Loader2 } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
 import { InformeAuditoria } from '../components/InformeAuditoria';
+import { supabaseUrl, supabaseAnonKey } from '../lib/supabase';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
 
@@ -213,9 +214,9 @@ export function AuditarPDF() {
     setResultado(null);
 
     try {
-      console.log('Extrayendo texto del PDF...');
+      console.log('📄 Extrayendo texto del PDF...');
       const pdfText = await extractTextFromPDF(file);
-      console.log('Texto extraído, longitud:', pdfText.length);
+      console.log('✅ Texto extraído, longitud:', pdfText.length);
 
       if (!pdfText || pdfText.length < 100) {
         throw new Error('El PDF parece estar vacío o no contiene texto extraíble');
@@ -225,18 +226,20 @@ export function AuditarPDF() {
       formData.append('pdfText', pdfText);
       formData.append('nombreArchivo', file.name);
 
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      console.log('Enviando a Edge Function:', `${supabaseUrl}/functions/v1/auditar-pdf`);
+      const edgeFunctionUrl = `${supabaseUrl}/functions/v1/auditar-pdf`;
+      console.log('🚀 Enviando a Edge Function:', edgeFunctionUrl);
+      console.log('🔑 URL de Supabase:', supabaseUrl);
+      console.log('🔑 Tiene Anon Key:', supabaseAnonKey ? 'Sí' : 'No');
 
-      const response = await fetch(`${supabaseUrl}/functions/v1/auditar-pdf`, {
+      const response = await fetch(edgeFunctionUrl, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Authorization': `Bearer ${supabaseAnonKey}`,
         },
         body: formData,
       });
 
-      console.log('Response status:', response.status);
+      console.log('📡 Response status:', response.status);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -256,8 +259,20 @@ export function AuditarPDF() {
       setResultado(data.resultado);
       setAuditoriaId(data.auditoriaId || null);
     } catch (err) {
-      console.error('Error completo:', err);
-      setError(err instanceof Error ? err.message : 'Error al procesar el archivo. Por favor intente nuevamente.');
+      console.error('❌ Error completo:', err);
+
+      // Diagnosticar tipo de error
+      if (err instanceof TypeError && err.message.includes('fetch')) {
+        console.error('🔍 Diagnóstico: Error de red o CORS');
+        console.error('   Posibles causas:');
+        console.error('   1. La URL de Supabase es incorrecta');
+        console.error('   2. La Edge Function no está desplegada');
+        console.error('   3. Problema de CORS en Supabase');
+        console.error('   4. No hay conexión a internet');
+        setError('Error de conexión. Verifica que la URL de Supabase sea correcta y que la Edge Function esté desplegada.');
+      } else {
+        setError(err instanceof Error ? err.message : 'Error al procesar el archivo. Por favor intente nuevamente.');
+      }
     } finally {
       setIsProcessing(false);
     }
