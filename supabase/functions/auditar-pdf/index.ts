@@ -1760,7 +1760,8 @@ function analizarFojaQuirurgica(texto: string): ResultadosFoja {
     const trozoValidacion = texto.substring(inicio, Math.min(inicio + 4000, texto.length));
 
     // Detectar si es una endoscopía o procedimiento endoscópico
-    const esEndoscopia = /\b(endoscop[ií]a|gastroscop[ií]a|colonoscop[ií]a|broncoscop[ií]a|videoesofagogastr[oó]gica|videoesofagogastroduodenoscop[ií]a|video\s*esofagogastr[oó]gica)\b/i.test(trozoValidacion);
+    // Detectar si es una endoscopía o procedimiento endoscópico (soporte para terminaciones a/o)
+    const esEndoscopia = /\b(endoscop[ií]a|gastroscop[ií]a|colonoscop[ií]a|broncoscop[ií]a|videoesofagogastr[oó]gic[ao]|videoesofagogastroduodenoscop[ií]a|video\s*esofagogastr[oó]gic[ao]|video\s*colonoscop[ií]a)\b/i.test(trozoValidacion);
 
     // Buscar miembros del equipo quirúrgico en el bloque de validación
     // Regex relajado para aceptar asteriscos, puntos, etc. (ej: ****SIN ANESTESIA****)
