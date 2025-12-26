@@ -27,7 +27,7 @@ interface DiaInternacion {
   estudios: Estudio[];
 }
 
-interface ResultadoAuditoria {
+export interface ResultadoAuditoria {
   nombreArchivo: string;
   datosPaciente: {
     nombre?: string;
@@ -84,6 +84,11 @@ interface ResultadoAuditoria {
   };
   erroresEstudios?: string[];
   listaDiasInternacion?: DiaInternacion[];
+  interconsultas?: any[];
+  practicasExcluidas?: any[];
+  endoscopias?: any[];
+  practicasAmbulatorias?: any[];
+  resultadoTerapia?: any;
 }
 
 /* =========================

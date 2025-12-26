@@ -16,28 +16,9 @@ import {
   Loader2,
   CheckCircle2
 } from 'lucide-react';
-import { generateAuditPDF } from '../utils/pdfGenerator';
+import { generateAuditPDF, ResultadoAuditoria } from '../utils/pdfGenerator';
 import { enviarMensajeWhatsApp } from '../services/whatsappService';
 import { ConfirmacionEnvioModal } from './ConfirmacionEnvioModal';
-
-// ===== INTERFACES =====
-interface ResultadoAuditoria {
-  nombreArchivo: string;
-  datosPaciente: any;
-  fechaIngreso: string;
-  fechaAlta: string;
-  diasHospitalizacion: number;
-  totalErrores: number;
-  comunicaciones: any[];
-  interconsultas?: any[];
-  practicasExcluidas?: any[];
-  endoscopias?: any[];
-  practicasAmbulatorias?: any[];
-  resultadoTerapia?: any;
-  erroresEvolucion: string[];
-  advertencias: any[];
-  [key: string]: any;
-}
 
 // ===== COMPONENTES AUXILIARES =====
 export function CollapsibleSection({
@@ -146,7 +127,7 @@ export function InformeAuditoria({ resultado, auditoriaId }: { resultado: Result
   const handleDescargarPDF = async () => {
     setGenerandoPDF(true);
     try {
-      await generateAuditPDF(resultado, auditoriaId);
+      await generateAuditPDF(resultado, true);
       setNotification({ type: 'success', message: 'PDF generado exitosamente' });
     } catch (error) {
       setNotification({ type: 'error', message: 'Error al generar PDF' });
@@ -449,20 +430,21 @@ export function InformeAuditoria({ resultado, auditoriaId }: { resultado: Result
         )}
 
         {/* CSS Animations */}
-        {/* Modal de Confirmación */}
-        {comunicacionSeleccionada !== null && (
-          <ConfirmacionEnvioModal
-            isOpen={modalConfirmacionAbierto}
-            onClose={() => setModalConfirmacionAbierto(false)}
-            onConfirm={handleConfirmarEnvio}
-            comunicacion={resultado.comunicaciones[comunicacionSeleccionada]}
-            datosPaciente={resultado.datosPaciente}
-            nombreArchivo={resultado.nombreArchivo}
-            isLoading={enviando}
-            numeroDestino={numeroDestino}
-            onNumeroDestinoChange={setNumeroDestino}
-          />
-        )}
-      </>
-      );
+      </div>
+      {/* Modal de Confirmación */}
+      {comunicacionSeleccionada !== null && (
+        <ConfirmacionEnvioModal
+          isOpen={modalConfirmacionAbierto}
+          onClose={() => setModalConfirmacionAbierto(false)}
+          onConfirm={handleConfirmarEnvio}
+          comunicacion={resultado.comunicaciones[comunicacionSeleccionada]}
+          datosPaciente={resultado.datosPaciente}
+          nombreArchivo={resultado.nombreArchivo}
+          isLoading={enviando}
+          numeroDestino={numeroDestino}
+          onNumeroDestinoChange={setNumeroDestino}
+        />
+      )}
+    </>
+  );
 }
