@@ -2,7 +2,45 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --bg-dark: #050505;
+  --grid-color: rgba(34, 197, 94, 0.15); /* Verde muy sutil */
+}
+
+body {
+  background-color: var(--bg-dark);
+  color: #ffffff;
+}
+
+/* Fondo de cuadrícula tecnológica */
+.bg-tech-grid {
+  background-size: 50px 50px;
+  background-image: 
+    linear-gradient(to right, var(--grid-color) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px);
+  mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+}
+
 @layer utilities {
+  .glass-dark {
+    @apply bg-black/40 backdrop-blur-md border border-white/10 shadow-xl;
+  }
+  
+  .glass-card {
+    background: rgba(10, 10, 10, 0.6);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+  }
+
+  .text-glow {
+    text-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+  }
+
+  .border-glow {
+    box-shadow: 0 0 15px rgba(34, 197, 94, 0.15);
+  }
+
   @keyframes slide-in {
     from {
       transform: translateX(100%);
@@ -16,5 +54,15 @@
 
   .animate-slide-in {
     animation: slide-in 0.3s ease-out;
+  }
+  
+  /* Animación de pulso verde suave */
+  @keyframes pulse-glow {
+    0%, 100% { opacity: 0.3; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(1.05); }
+  }
+  
+  .animate-pulse-glow {
+    animation: pulse-glow 4s infinite ease-in-out;
   }
 }
