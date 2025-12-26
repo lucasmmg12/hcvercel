@@ -27,7 +27,7 @@ function App() {
               <img
                 src="/logogrow.png"
                 alt="Grow Labs Logo"
-                className="h-14 w-14 object-contain"
+                className="h-14 w-14 object-contain bg-white rounded-full p-1 border-2 border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.5)]"
               />
               <div>
                 <h1 className="text-xl font-bold text-white tracking-wide">Auditoría Médica</h1>
@@ -39,8 +39,8 @@ function App() {
               <button
                 onClick={() => setCurrentPage('documentacion')}
                 className={`px-6 py-2 rounded-lg font-semibold transition-all duration-300 ${currentPage === 'documentacion'
-                    ? 'bg-green-600 text-white shadow-[0_0_15px_rgba(34,197,94,0.4)]'
-                    : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  ? 'bg-green-600 text-white shadow-[0_0_15px_rgba(34,197,94,0.4)]'
+                  : 'text-gray-400 hover:text-white hover:bg-white/5'
                   }`}
               >
                 <span className="flex items-center gap-2">
@@ -51,8 +51,8 @@ function App() {
               <button
                 onClick={() => setCurrentPage('auditar')}
                 className={`px-6 py-2 rounded-lg font-semibold transition-all duration-300 ${currentPage === 'auditar'
-                    ? 'bg-green-600 text-white shadow-[0_0_15px_rgba(34,197,94,0.4)]'
-                    : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  ? 'bg-green-600 text-white shadow-[0_0_15px_rgba(34,197,94,0.4)]'
+                  : 'text-gray-400 hover:text-white hover:bg-white/5'
                   }`}
               >
                 <span className="flex items-center gap-2">
@@ -63,8 +63,8 @@ function App() {
               <button
                 onClick={() => setCurrentPage('historial')}
                 className={`px-6 py-2 rounded-lg font-semibold transition-all duration-300 ${currentPage === 'historial'
-                    ? 'bg-green-600 text-white shadow-[0_0_15px_rgba(34,197,94,0.4)]'
-                    : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  ? 'bg-green-600 text-white shadow-[0_0_15px_rgba(34,197,94,0.4)]'
+                  : 'text-gray-400 hover:text-white hover:bg-white/5'
                   }`}
               >
                 <span className="flex items-center gap-2">
@@ -75,8 +75,8 @@ function App() {
               <button
                 onClick={() => setCurrentPage('actualizaciones')}
                 className={`px-6 py-2 rounded-lg font-semibold transition-all duration-300 ${currentPage === 'actualizaciones'
-                    ? 'bg-green-600 text-white shadow-[0_0_15px_rgba(34,197,94,0.4)]'
-                    : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  ? 'bg-green-600 text-white shadow-[0_0_15px_rgba(34,197,94,0.4)]'
+                  : 'text-gray-400 hover:text-white hover:bg-white/5'
                   }`}
               >
                 <span className="flex items-center gap-2">
@@ -106,8 +106,8 @@ function App() {
                   setMobileMenuOpen(false);
                 }}
                 className={`px-6 py-3 rounded-lg font-semibold transition-all text-left ${currentPage === 'documentacion'
-                    ? 'bg-green-600 text-white'
-                    : 'text-gray-300 hover:bg-white/5'
+                  ? 'bg-green-600 text-white'
+                  : 'text-gray-300 hover:bg-white/5'
                   }`}
               >
                 <span className="flex items-center gap-2">
@@ -121,8 +121,8 @@ function App() {
                   setMobileMenuOpen(false);
                 }}
                 className={`px-6 py-3 rounded-lg font-semibold transition-all text-left ${currentPage === 'auditar'
-                    ? 'bg-green-600 text-white'
-                    : 'text-gray-300 hover:bg-white/5'
+                  ? 'bg-green-600 text-white'
+                  : 'text-gray-300 hover:bg-white/5'
                   }`}
               >
                 <span className="flex items-center gap-2">
@@ -136,8 +136,8 @@ function App() {
                   setMobileMenuOpen(false);
                 }}
                 className={`px-6 py-3 rounded-lg font-semibold transition-all text-left ${currentPage === 'historial'
-                    ? 'bg-green-600 text-white'
-                    : 'text-gray-300 hover:bg-white/5'
+                  ? 'bg-green-600 text-white'
+                  : 'text-gray-300 hover:bg-white/5'
                   }`}
               >
                 <span className="flex items-center gap-2">
@@ -151,8 +151,8 @@ function App() {
                   setMobileMenuOpen(false);
                 }}
                 className={`px-6 py-3 rounded-lg font-semibold transition-all text-left ${currentPage === 'actualizaciones'
-                    ? 'bg-green-600 text-white'
-                    : 'text-gray-300 hover:bg-white/5'
+                  ? 'bg-green-600 text-white'
+                  : 'text-gray-300 hover:bg-white/5'
                   }`}
               >
                 <span className="flex items-center gap-2">
@@ -180,7 +180,7 @@ function App() {
                 <img
                   src="/logogrow.png"
                   alt="Grow Labs Logo"
-                  className="h-12 w-12 object-contain p-1"
+                  className="h-14 w-14 object-contain bg-white rounded-full p-1 border-2 border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.5)]"
                 />
                 <div>
                   <h3 className="text-2xl font-bold text-white">Grow Labs</h3>
