@@ -2035,26 +2035,28 @@ function analizarFojaQuirurgica(texto: string): ResultadosFoja {
             const fecha1 = `${partes1[0].padStart(2, '0')}/${partes1[1].padStart(2, '0')}/${partes1[2]}`;
             const fecha2 = `${partes2[0].padStart(2, '0')}/${partes2[1].padStart(2, '0')}/${partes2[2]}`;
             if (fecha1 === fecha2) {
-              // Si tienen la misma fecha, verificar hora de inicio para distinguir procedimientos
-              // Solamente si ambas tienen hora y es distinta, las asumimos diferentes.
-              // Si no tienen hora, nos fijamos en el equipo para no duplicar por error de OCR repetido.
-
+              // Si tienen la misma fecha, verificar hora de inicio
               if (foja.hora_inicio && fojaExistente.hora_inicio && foja.hora_inicio !== fojaExistente.hora_inicio) {
-                return false; // Son diferentes procedimientos el mismo día
+                return false;
               }
 
-              // Si tienen la misma hora o no tienen hora, seguimos verificando por equipo
-              const anestesista1 = foja.equipo_quirurgico.find(e => e.rol === 'anestesista')?.nombre;
-              const anestesista2 = fojaExistente.equipo_quirurgico.find(e => e.rol === 'anestesista')?.nombre;
-              if (anestesista1 && anestesista2 && anestesista1 === anestesista2) {
-                return true; // Es duplicada
+              // Comparar equipos completos para determinar si es la misma cirugía
+              // Generamos un set de "Rol:Nombre" para cada una
+              const equipo1 = new Set(foja.equipo_quirurgico.map(e => `${e.rol}:${e.nombre}`));
+              const equipo2 = new Set(fojaExistente.equipo_quirurgico.map(e => `${e.rol}:${e.nombre}`));
+
+              // Si el tamaño es diferente o el contenido es diferente, son distintas
+              if (equipo1.size !== equipo2.size) return false;
+
+              let sonIdenticos = true;
+              for (const miembro of equipo1) {
+                if (!equipo2.has(miembro)) {
+                  sonIdenticos = false;
+                  break;
+                }
               }
-              // También verificar por cirujano si no hay anestesista
-              const cirujano1 = foja.equipo_quirurgico.find(e => e.rol === 'cirujano')?.nombre;
-              const cirujano2 = fojaExistente.equipo_quirurgico.find(e => e.rol === 'cirujano')?.nombre;
-              if (cirujano1 && cirujano2 && cirujano1 === cirujano2) {
-                return true; // Es duplicada
-              }
+
+              if (sonIdenticos) return true; // Fecha igual, equipo idéntico -> Duplicada
             }
           }
         }
