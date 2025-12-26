@@ -161,290 +161,290 @@ export function InformeAuditoria({ resultado, auditoriaId }: { resultado: Result
 
   return (
     <>
-      return (
-      <>
-        <div className="w-full">
+      <div className="w-full">
 
-          {/* Header con glassmorphism */}
+        {/* Header con glassmorphism */}
+        <div
+          className="rounded-2xl shadow-2xl p-6 mb-6 relative overflow-hidden"
+          style={{
+            background: 'rgba(255, 255, 255, 0.1)',
+            backdropFilter: 'blur(20px)',
+            border: '1px solid rgba(34, 197, 94, 0.3)',
+            boxShadow: '0 8px 32px 0 rgba(34, 197, 94, 0.3)',
+          }}
+        >
+          {/* Borde brillante animado */}
           <div
-            className="rounded-2xl shadow-2xl p-6 mb-6 relative overflow-hidden"
+            className="absolute inset-0 rounded-2xl pointer-events-none"
             style={{
-              background: 'rgba(255, 255, 255, 0.1)',
-              backdropFilter: 'blur(20px)',
-              border: '1px solid rgba(34, 197, 94, 0.3)',
-              boxShadow: '0 8px 32px 0 rgba(34, 197, 94, 0.3)',
+              background: 'linear-gradient(45deg, transparent, rgba(34, 197, 94, 0.3), transparent)',
+              animation: 'borderGlow 3s ease-in-out infinite',
             }}
-          >
-            {/* Borde brillante animado */}
-            <div
-              className="absolute inset-0 rounded-2xl pointer-events-none"
-              style={{
-                background: 'linear-gradient(45deg, transparent, rgba(34, 197, 94, 0.3), transparent)',
-                animation: 'borderGlow 3s ease-in-out infinite',
-              }}
-            ></div>
+          ></div>
 
-            <div className="relative z-10">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h1 className="text-3xl font-bold mb-2">
-                    <span className="bg-gradient-to-r from-green-400 to-emerald-300 bg-clip-text text-transparent">
-                      Informe de Auditoría Médica
-                    </span>
-                  </h1>
-                  <p className="text-gray-300">{resultado.nombreArchivo}</p>
-                </div>
-                <StatusBadge status={estadoGeneral} />
-              </div>
-
-              <div className="flex gap-3">
-                <button
-                  onClick={handleDescargarPDF}
-                  disabled={generandoPDF}
-                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg font-bold transition-all hover:shadow-xl hover:shadow-green-500/50 hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 relative overflow-hidden group"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-                  <span className="relative flex items-center gap-2">
-                    {generandoPDF ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
-                    {generandoPDF ? 'Generando...' : 'Descargar PDF'}
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h1 className="text-3xl font-bold mb-2">
+                  <span className="bg-gradient-to-r from-green-400 to-emerald-300 bg-clip-text text-transparent">
+                    Informe de Auditoría Médica
                   </span>
-                </button>
+                </h1>
+                <p className="text-gray-300">{resultado.nombreArchivo}</p>
               </div>
+              <StatusBadge status={estadoGeneral} />
             </div>
-          </div>
 
-          {/* Métricas con glassmorphism */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <MetricCard
-              label="Días de Hospitalización"
-              value={resultado.diasHospitalizacion}
-              icon={Calendar}
-              color="blue"
-            />
-            <MetricCard
-              label="Total de Errores"
-              value={totalErrores}
-              icon={AlertCircle}
-              color={totalErrores === 0 ? 'green' : totalErrores > 5 ? 'red' : 'orange'}
-            />
-            <MetricCard
-              label="Comunicaciones"
-              value={resultado.comunicaciones?.length || 0}
-              icon={Send}
-              color="purple"
-            />
-            <MetricCard
-              label="Interconsultas"
-              value={resultado.interconsultas?.length || 0}
-              icon={Stethoscope}
-              color="blue"
-            />
-          </div>
-
-          {/* Datos del Paciente */}
-          <CollapsibleSection title="Datos del Paciente" icon={User} defaultOpen={false}>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-600 mb-1">Nombre Completo</p>
-                <p className="font-semibold text-gray-900">{resultado.datosPaciente.nombre || 'No especificado'}</p>
-              </div>
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-600 mb-1">DNI</p>
-                <p className="font-semibold text-gray-900">{resultado.datosPaciente.dni || 'No especificado'}</p>
-              </div>
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-600 mb-1">Obra Social</p>
-                <p className="font-semibold text-gray-900">{resultado.datosPaciente.obra_social || 'No especificado'}</p>
-              </div>
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-600 mb-1">Habitación</p>
-                <p className="font-semibold text-gray-900">{resultado.datosPaciente.habitacion || 'No especificado'}</p>
-              </div>
-            </div>
-          </CollapsibleSection>
-
-          {/* Terapia */}
-          {resultado.resultadoTerapia?.esTerapia && (
-            <CollapsibleSection
-              title="Clasificación de Terapia"
-              icon={Activity}
-              badge={`${resultado.resultadoTerapia.diasTerapiaIntensiva + resultado.resultadoTerapia.diasTerapiaIntermedia} días`}
-              badgeColor="bg-red-500"
-              defaultOpen={false}
-            >
-              <div className="grid md:grid-cols-3 gap-4 mb-6">
-                <MetricCard label="Terapia Intensiva" value={resultado.resultadoTerapia.diasTerapiaIntensiva} icon={Activity} color="red" subtitle="días" />
-                <MetricCard label="Terapia Intermedia" value={resultado.resultadoTerapia.diasTerapiaIntermedia} icon={Activity} color="orange" subtitle="días" />
-                <MetricCard label="Internación General" value={resultado.resultadoTerapia.diasInternacionGeneral} icon={Activity} color="blue" subtitle="días" />
-              </div>
-
-              <div className="space-y-2">
-                <h3 className="font-semibold text-gray-800 mb-3">Clasificación Diaria</h3>
-                {resultado.resultadoTerapia.clasificacionPorDia?.map((dia: any, idx: number) => (
-                  <div key={idx} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                    <div className={`w-3 h-3 rounded-full ${dia.clasificacion === 'terapia_intensiva' ? 'bg-red-500' :
-                      dia.clasificacion === 'terapia_intermedia' ? 'bg-orange-500' : 'bg-blue-500'
-                      }`} />
-                    <span className="font-semibold text-gray-700 w-28">{dia.fecha}</span>
-                    <span className="flex-1 text-sm text-gray-600">{dia.justificacion}</span>
-                  </div>
-                ))}
-              </div>
-            </CollapsibleSection>
-          )}
-
-          {/* Interconsultas */}
-          {resultado.interconsultas && resultado.interconsultas.length > 0 && (
-            <CollapsibleSection title="Interconsultas" icon={Stethoscope} badge={resultado.interconsultas.length} badgeColor="bg-blue-500" defaultOpen={false}>
-              <div className="space-y-3">
-                {resultado.interconsultas.map((inter: any, idx: number) => (
-                  <div key={idx} className="p-4 bg-blue-50 rounded-lg border-l-4 border-blue-500">
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <span className="font-bold text-blue-900 text-lg">{inter.especialidad}</span>
-                        <p className="text-sm text-blue-700">{inter.fecha} {inter.hora && `- ${inter.hora}`}</p>
-                      </div>
-                    </div>
-                    <div className="space-y-1 text-sm">
-                      <p><span className="font-semibold">Consultor:</span> {inter.consultor.nombre}</p>
-                      <p><span className="font-semibold">Motivo:</span> {inter.motivo}</p>
-                      {inter.diagnostico && <p><span className="font-semibold">Diagnóstico:</span> {inter.diagnostico}</p>}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CollapsibleSection>
-          )}
-
-          {/* Prácticas Excluidas */}
-          {resultado.practicasExcluidas && resultado.practicasExcluidas.length > 0 && (
-            <CollapsibleSection title="Prácticas Excluidas" icon={Syringe} badge={resultado.practicasExcluidas.length} badgeColor="bg-yellow-500" defaultOpen={false}>
-              <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4 mb-4">
-                <p className="text-yellow-800 font-semibold flex items-center gap-2">
-                  <AlertTriangle className="w-5 h-5" />
-                  Requieren autorización previa y/o facturación separada
-                </p>
-              </div>
-              <div className="grid md:grid-cols-2 gap-3">
-                {resultado.practicasExcluidas.map((practica: any, idx: number) => (
-                  <div key={idx} className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                    <p className="font-bold text-yellow-900 mb-1">{practica.tipo}</p>
-                    <p className="text-sm text-yellow-800 mb-2">{practica.advertencia}</p>
-                    <div className="flex flex-wrap gap-2">
-                      {practica.requiere_autorizacion && (
-                        <span className="text-xs px-2 py-1 bg-red-200 text-red-800 rounded font-semibold">Requiere Autorización</span>
-                      )}
-                      {practica.facturacion_aparte && (
-                        <span className="text-xs px-2 py-1 bg-blue-200 text-blue-800 rounded">Facturación Aparte</span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CollapsibleSection>
-          )}
-
-          {/* Endoscopías */}
-          {resultado.endoscopias && resultado.endoscopias.length > 0 && (
-            <CollapsibleSection title="Endoscopías" icon={FileText} badge={resultado.endoscopias.length} badgeColor="bg-purple-500" defaultOpen={false}>
-              <div className="space-y-4">
-                {resultado.endoscopias.map((endo: any, idx: number) => (
-                  <div key={idx} className="p-4 bg-purple-50 rounded-lg border-2 border-purple-200">
-                    <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <span className="font-bold text-purple-900 text-lg">{endo.procedimiento}</span>
-                        <p className="text-sm text-purple-700">{endo.fecha} {endo.hora_inicio && `- ${endo.hora_inicio}`}</p>
-                      </div>
-                      {endo.biopsias && (
-                        <span className="px-3 py-1 bg-purple-200 text-purple-800 rounded-full text-sm font-semibold">Con biopsias</span>
-                      )}
-                    </div>
-                    <div className="space-y-2 text-sm">
-                      <p><span className="font-semibold">Endoscopista:</span> {endo.endoscopista.nombre}</p>
-                      {endo.hallazgos && (
-                        <div>
-                          <span className="font-semibold">Hallazgos:</span>
-                          <p className="mt-1 p-2 bg-white rounded">{endo.hallazgos}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CollapsibleSection>
-          )}
-
-          {/* Errores y Comunicaciones */}
-          {totalErrores > 0 && (
-            <CollapsibleSection title="Errores y Comunicaciones" icon={AlertCircle} badge={totalErrores} badgeColor="bg-red-500" defaultOpen={true}>
-              {resultado.comunicaciones?.map((com: any, idx: number) => (
-                <div key={idx} className="mb-4 p-4 bg-red-50 rounded-lg border-l-4 border-red-500">
-                  <div className="flex items-start justify-between mb-2">
-                    <div>
-                      <span className="font-bold text-red-900">{com.sector}</span>
-                      <p className="text-sm text-red-700">{com.responsable}</p>
-                    </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${com.urgencia === 'ALTA' ? 'bg-red-200 text-red-800' :
-                      com.urgencia === 'MEDIA' ? 'bg-orange-200 text-orange-800' : 'bg-yellow-200 text-yellow-800'
-                      }`}>
-                      {com.urgencia}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-700 mb-2">{com.motivo}</p>
-                  <div className="bg-white p-3 rounded text-sm mb-3">{com.mensaje}</div>
-                  <button
-                    onClick={() => abrirModalEnvio(idx)}
-                    disabled={enviando}
-                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all disabled:opacity-50"
-                  >
-                    <Send className="w-4 h-4" />
-                    Enviar por WhatsApp
-                  </button>
-                </div>
-              ))}
-            </CollapsibleSection>
-          )}
-
-          {/* Footer */}
-          <div className="mt-8 text-center">
-            <p className="text-gray-300 text-sm">
-              Powered by <strong className="text-green-400">Grow Labs</strong> - Sanatorio Argentino, San Juan
-            </p>
-            <div className="mt-4 flex justify-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-              <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse delay-150"></div>
-              <div className="w-2 h-2 rounded-full bg-green-300 animate-pulse delay-300"></div>
+            <div className="flex gap-3">
+              <button
+                onClick={handleDescargarPDF}
+                disabled={generandoPDF}
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg font-bold transition-all hover:shadow-xl hover:shadow-green-500/50 hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 relative overflow-hidden group"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                <span className="relative flex items-center gap-2">
+                  {generandoPDF ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
+                  {generandoPDF ? 'Generando...' : 'Descargar PDF'}
+                </span>
+              </button>
             </div>
           </div>
         </div>
 
-        {/* Notificaciones */}
-        {notification && (
-          <div className="fixed bottom-6 right-6 z-50 animate-slide-in">
-            <div className={`px-6 py-4 rounded-lg shadow-2xl flex items-center gap-3 ${notification.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
-              }`}>
-              {notification.type === 'success' ? <CheckCircle2 className="w-6 h-6" /> : <AlertCircle className="w-6 h-6" />}
-              <p className="font-semibold">{notification.message}</p>
+        {/* Métricas con glassmorphism */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <MetricCard
+            label="Días de Hospitalización"
+            value={resultado.diasHospitalizacion}
+            icon={Calendar}
+            color="blue"
+          />
+          <MetricCard
+            label="Total de Errores"
+            value={totalErrores}
+            icon={AlertCircle}
+            color={totalErrores === 0 ? 'green' : totalErrores > 5 ? 'red' : 'orange'}
+          />
+          <MetricCard
+            label="Comunicaciones"
+            value={resultado.comunicaciones?.length || 0}
+            icon={Send}
+            color="purple"
+          />
+          <MetricCard
+            label="Interconsultas"
+            value={resultado.interconsultas?.length || 0}
+            icon={Stethoscope}
+            color="blue"
+          />
+        </div>
+
+        {/* Datos del Paciente */}
+        <CollapsibleSection title="Datos del Paciente" icon={User} defaultOpen={false}>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <p className="text-sm text-gray-600 mb-1">Nombre Completo</p>
+              <p className="font-semibold text-gray-900">{resultado.datosPaciente.nombre || 'No especificado'}</p>
+            </div>
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <p className="text-sm text-gray-600 mb-1">DNI</p>
+              <p className="font-semibold text-gray-900">{resultado.datosPaciente.dni || 'No especificado'}</p>
+            </div>
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <p className="text-sm text-gray-600 mb-1">Obra Social</p>
+              <p className="font-semibold text-gray-900">{resultado.datosPaciente.obra_social || 'No especificado'}</p>
+            </div>
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <p className="text-sm text-gray-600 mb-1">Habitación</p>
+              <p className="font-semibold text-gray-900">{resultado.datosPaciente.habitacion || 'No especificado'}</p>
             </div>
           </div>
+        </CollapsibleSection>
+
+        {/* Terapia */}
+        {resultado.resultadoTerapia?.esTerapia && (
+          <CollapsibleSection
+            title="Clasificación de Terapia"
+            icon={Activity}
+            badge={`${resultado.resultadoTerapia.diasTerapiaIntensiva + resultado.resultadoTerapia.diasTerapiaIntermedia} días`}
+            badgeColor="bg-red-500"
+            defaultOpen={false}
+          >
+            <div className="grid md:grid-cols-3 gap-4 mb-6">
+              <MetricCard label="Terapia Intensiva" value={resultado.resultadoTerapia.diasTerapiaIntensiva} icon={Activity} color="red" subtitle="días" />
+              <MetricCard label="Terapia Intermedia" value={resultado.resultadoTerapia.diasTerapiaIntermedia} icon={Activity} color="orange" subtitle="días" />
+              <MetricCard label="Internación General" value={resultado.resultadoTerapia.diasInternacionGeneral} icon={Activity} color="blue" subtitle="días" />
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="font-semibold text-gray-800 mb-3">Clasificación Diaria</h3>
+              {resultado.resultadoTerapia.clasificacionPorDia?.map((dia: any, idx: number) => (
+                <div key={idx} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                  <div className={`w-3 h-3 rounded-full ${dia.clasificacion === 'terapia_intensiva' ? 'bg-red-500' :
+                    dia.clasificacion === 'terapia_intermedia' ? 'bg-orange-500' : 'bg-blue-500'
+                    }`} />
+                  <span className="font-semibold text-gray-700 w-28">{dia.fecha}</span>
+                  <span className="flex-1 text-sm text-gray-600">{dia.justificacion}</span>
+                </div>
+              ))}
+            </div>
+          </CollapsibleSection>
         )}
 
-        {/* CSS Animations */}
+        {/* Interconsultas */}
+        {resultado.interconsultas && resultado.interconsultas.length > 0 && (
+          <CollapsibleSection title="Interconsultas" icon={Stethoscope} badge={resultado.interconsultas.length} badgeColor="bg-blue-500" defaultOpen={false}>
+            <div className="space-y-3">
+              {resultado.interconsultas.map((inter: any, idx: number) => (
+                <div key={idx} className="p-4 bg-blue-50 rounded-lg border-l-4 border-blue-500">
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <span className="font-bold text-blue-900 text-lg">{inter.especialidad}</span>
+                      <p className="text-sm text-blue-700">{inter.fecha} {inter.hora && `- ${inter.hora}`}</p>
+                    </div>
+                  </div>
+                  <div className="space-y-1 text-sm">
+                    <p><span className="font-semibold">Consultor:</span> {inter.consultor.nombre}</p>
+                    <p><span className="font-semibold">Motivo:</span> {inter.motivo}</p>
+                    {inter.diagnostico && <p><span className="font-semibold">Diagnóstico:</span> {inter.diagnostico}</p>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CollapsibleSection>
+        )}
+
+        {/* Prácticas Excluidas */}
+        {resultado.practicasExcluidas && resultado.practicasExcluidas.length > 0 && (
+          <CollapsibleSection title="Prácticas Excluidas" icon={Syringe} badge={resultado.practicasExcluidas.length} badgeColor="bg-yellow-500" defaultOpen={false}>
+            <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4 mb-4">
+              <p className="text-yellow-800 font-semibold flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5" />
+                Requieren autorización previa y/o facturación separada
+              </p>
+            </div>
+            <div className="grid md:grid-cols-2 gap-3">
+              {resultado.practicasExcluidas.map((practica: any, idx: number) => (
+                <div key={idx} className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                  <p className="font-bold text-yellow-900 mb-1">{practica.tipo}</p>
+                  <p className="text-sm text-yellow-800 mb-2">{practica.advertencia}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {practica.requiere_autorizacion && (
+                      <span className="text-xs px-2 py-1 bg-red-200 text-red-800 rounded font-semibold">Requiere Autorización</span>
+                    )}
+                    {practica.facturacion_aparte && (
+                      <span className="text-xs px-2 py-1 bg-blue-200 text-blue-800 rounded">Facturación Aparte</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CollapsibleSection>
+        )}
+
+        {/* Endoscopías */}
+        {resultado.endoscopias && resultado.endoscopias.length > 0 && (
+          <CollapsibleSection title="Endoscopías" icon={FileText} badge={resultado.endoscopias.length} badgeColor="bg-purple-500" defaultOpen={false}>
+            <div className="space-y-4">
+              {resultado.endoscopias.map((endo: any, idx: number) => (
+                <div key={idx} className="p-4 bg-purple-50 rounded-lg border-2 border-purple-200">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <span className="font-bold text-purple-900 text-lg">{endo.procedimiento}</span>
+                      <p className="text-sm text-purple-700">{endo.fecha} {endo.hora_inicio && `- ${endo.hora_inicio}`}</p>
+                    </div>
+                    {endo.biopsias && (
+                      <span className="px-3 py-1 bg-purple-200 text-purple-800 rounded-full text-sm font-semibold">Con biopsias</span>
+                    )}
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <p><span className="font-semibold">Endoscopista:</span> {endo.endoscopista.nombre}</p>
+                    {endo.hallazgos && (
+                      <div>
+                        <span className="font-semibold">Hallazgos:</span>
+                        <p className="mt-1 p-2 bg-white rounded">{endo.hallazgos}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CollapsibleSection>
+        )}
+
+        {/* Errores y Comunicaciones */}
+        {totalErrores > 0 && (
+          <CollapsibleSection title="Errores y Comunicaciones" icon={AlertCircle} badge={totalErrores} badgeColor="bg-red-500" defaultOpen={true}>
+            {resultado.comunicaciones?.map((com: any, idx: number) => (
+              <div key={idx} className="mb-4 p-4 bg-red-50 rounded-lg border-l-4 border-red-500">
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <span className="font-bold text-red-900">{com.sector}</span>
+                    <p className="text-sm text-red-700">{com.responsable}</p>
+                  </div>
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${com.urgencia === 'ALTA' ? 'bg-red-200 text-red-800' :
+                    com.urgencia === 'MEDIA' ? 'bg-orange-200 text-orange-800' : 'bg-yellow-200 text-yellow-800'
+                    }`}>
+                    {com.urgencia}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-700 mb-2">{com.motivo}</p>
+                <div className="bg-white p-3 rounded text-sm mb-3">{com.mensaje}</div>
+                <button
+                  onClick={() => abrirModalEnvio(idx)}
+                  disabled={enviando}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all disabled:opacity-50"
+                >
+                  <Send className="w-4 h-4" />
+                  Enviar por WhatsApp
+                </button>
+              </div>
+            ))}
+          </CollapsibleSection>
+        )}
+
+        {/* Footer */}
+        <div className="mt-8 text-center">
+          <p className="text-gray-300 text-sm">
+            Powered by <strong className="text-green-400">Grow Labs</strong> - Sanatorio Argentino, San Juan
+          </p>
+          <div className="mt-4 flex justify-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+            <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse delay-150"></div>
+            <div className="w-2 h-2 rounded-full bg-green-300 animate-pulse delay-300"></div>
+          </div>
+        </div>
       </div>
-      {/* Modal de Confirmación */}
-      {comunicacionSeleccionada !== null && (
-        <ConfirmacionEnvioModal
-          isOpen={modalConfirmacionAbierto}
-          onClose={() => setModalConfirmacionAbierto(false)}
-          onConfirm={handleConfirmarEnvio}
-          comunicacion={resultado.comunicaciones[comunicacionSeleccionada]}
-          datosPaciente={resultado.datosPaciente}
-          nombreArchivo={resultado.nombreArchivo}
-          isLoading={enviando}
-          numeroDestino={numeroDestino}
-          onNumeroDestinoChange={setNumeroDestino}
-        />
+
+      {/* Notificaciones */}
+      {notification && (
+        <div className="fixed bottom-6 right-6 z-50 animate-slide-in">
+          <div className={`px-6 py-4 rounded-lg shadow-2xl flex items-center gap-3 ${notification.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
+            }`}>
+            {notification.type === 'success' ? <CheckCircle2 className="w-6 h-6" /> : <AlertCircle className="w-6 h-6" />}
+            <p className="font-semibold">{notification.message}</p>
+          </div>
+        </div>
       )}
+
+      {/* CSS Animations */}
+
+      {/* Modal de Confirmación */}
+      {
+        comunicacionSeleccionada !== null && (
+          <ConfirmacionEnvioModal
+            isOpen={modalConfirmacionAbierto}
+            onClose={() => setModalConfirmacionAbierto(false)}
+            onConfirm={handleConfirmarEnvio}
+            comunicacion={resultado.comunicaciones[comunicacionSeleccionada]}
+            datosPaciente={resultado.datosPaciente}
+            nombreArchivo={resultado.nombreArchivo}
+            isLoading={enviando}
+            numeroDestino={numeroDestino}
+            onNumeroDestinoChange={setNumeroDestino}
+          />
+        )
+      }
     </>
   );
 }
