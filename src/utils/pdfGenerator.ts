@@ -4,6 +4,9 @@ import autoTable from 'jspdf-autotable';
 /* =========================
    Tipos
    ========================= */
+/* =========================
+   Tipos
+   ========================= */
 type CategoriaEstudio = 'Imagenes' | 'Laboratorio' | 'Procedimientos';
 
 interface Estudio {
@@ -15,6 +18,13 @@ interface Estudio {
   resultado?: string | null;
   informe_presente: boolean;
   advertencias: string[];
+}
+
+interface DiaInternacion {
+  fecha: string;
+  tieneEvolucion: boolean;
+  tieneFojaQuirurgica: boolean;
+  estudios: Estudio[];
 }
 
 interface ResultadoAuditoria {
@@ -73,16 +83,19 @@ interface ResultadoAuditoria {
     procedimientos: number;
   };
   erroresEstudios?: string[];
+  listaDiasInternacion?: DiaInternacion[];
 }
 
 /* =========================
-   Colores
+   Colores (Estética Grow Labs Dark Tech adaptada a PDF)
    ========================= */
-const GROW_GREEN = [22, 163, 74];
-const GROW_DARK = [31, 41, 55];
-const ERROR_RED = [220, 38, 38];
-const WARNING_YELLOW = [245, 158, 11];
-const LIGHT_GRAY = [249, 250, 251];
+const COLOR_PRIMARY: [number, number, number] = [34, 197, 94]; // Green 500 (#22c55e) - Color de marca principal
+const COLOR_DARK_BG: [number, number, number] = [5, 5, 5];     // Almost Black (#050505) - Fondo oscuro tecnológico
+const COLOR_ACCENT: [number, number, number] = [74, 222, 128]; // Green 400 - Acentos brillantes para texto oscuro
+const COLOR_TEXT_MAIN: [number, number, number] = [31, 41, 55]; // Gray 800 - Texto principal (para legibilidad en blanco)
+const COLOR_TEXT_LIGHT: [number, number, number] = [107, 114, 128]; // Gray 500 - Texto secundario
+const COLOR_ERROR: [number, number, number] = [220, 38, 38];   // Red 600 - Errores críticos
+const COLOR_WARNING: [number, number, number] = [234, 179, 8]; // Yellow 500 - Advertencias
 
 /* =========================
    Util
@@ -97,39 +110,59 @@ export async function generateAuditPDF(resultado: ResultadoAuditoria, downloadPD
   let yPos = 20;
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('es-AR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('es-AR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      });
+    } catch (e) {
+      return dateString;
+    }
   };
 
+  // Función auxiliar para dibujar encabezado y pie en todas las páginas
   const addHeaderFooter = (pageNumber: number, totalPages: number) => {
-    // Header
-    doc.setFillColor(...GROW_GREEN);
-    doc.rect(0, 0, pageWidth, 15, 'F');
+    // === HEADER ===
+    // Fondo oscuro tecnológico
+    doc.setFillColor(...COLOR_DARK_BG);
+    doc.rect(0, 0, pageWidth, 20, 'F');
 
-    doc.setFontSize(10);
+    // Línea verde neón inferior del header
+    doc.setLineWidth(0.5);
+    doc.setDrawColor(...COLOR_PRIMARY);
+    doc.line(0, 20, pageWidth, 20);
+
+    // Texto Izquierda: GROW LABS
+    doc.setFontSize(12);
     doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
-    doc.text('GROW LABS', 10, 9);
+    doc.text('GROW LABS', 10, 11);
+
     doc.setFontSize(7);
+    doc.setTextColor(...COLOR_ACCENT); // Verde neón
     doc.setFont('helvetica', 'normal');
-    doc.text('Donde tus ideas crecen', 10, 12.5);
+    doc.text('Donde tus ideas crecen', 10, 15);
 
+    // Texto Derecha: Institución
+    doc.setFontSize(9);
     doc.setTextColor(255, 255, 255);
-    doc.text('Sanatorio Argentino - San Juan', pageWidth - 10, 9, { align: 'right' });
+    doc.text('Sanatorio Argentino - Auditoría Inteligente', pageWidth - 10, 13, { align: 'right' });
 
-    // Footer
-    doc.setFillColor(...GROW_DARK);
-    doc.rect(0, pageHeight - 10, pageWidth, 10, 'F');
+    // === FOOTER ===
+    // Fondo oscuro
+    doc.setFillColor(...COLOR_DARK_BG);
+    doc.rect(0, pageHeight - 12, pageWidth, 12, 'F');
+
+    // Línea verde superior del footer
+    doc.setDrawColor(...COLOR_PRIMARY);
+    doc.line(0, pageHeight - 12, pageWidth, pageHeight - 12);
+
     doc.setFontSize(8);
-    doc.setTextColor(255, 255, 255);
+    doc.setTextColor(156, 163, 175); // Gray 400
     doc.text(
-      `Sistema desarrollado por Grow Labs | Página ${pageNumber} de ${totalPages}`,
+      `Generado con IA por Grow Labs | Página ${pageNumber} de ${totalPages}`,
       pageWidth / 2,
       pageHeight - 5,
       { align: 'center' }
@@ -139,98 +172,161 @@ export async function generateAuditPDF(resultado: ResultadoAuditoria, downloadPD
   const checkPageBreak = (requiredSpace: number) => {
     if (yPos + requiredSpace > pageHeight - 20) {
       doc.addPage();
-      yPos = 25;
+      yPos = 30; // Margen superior un poco más amplio tras salto
       return true;
     }
     return false;
   };
 
-  const addSection = (title: string, bgColor: number[] = GROW_GREEN) => {
+  // Sección estilizada
+  const addSection = (title: string, accentColor: number[] = COLOR_PRIMARY) => {
     checkPageBreak(15);
-    doc.setFillColor(...bgColor);
-    doc.rect(10, yPos, pageWidth - 20, 10, 'F');
-    doc.setFontSize(12);
-    doc.setTextColor(255, 255, 255);
+    doc.setFillColor(...accentColor);
+    // Pequeña barra lateral verde en lugar de fondo completo para un look más moderno/clean
+    doc.rect(10, yPos, 2, 8, 'F');
+
+    doc.setFontSize(14);
+    doc.setTextColor(...COLOR_TEXT_MAIN);
     doc.setFont('helvetica', 'bold');
-    doc.text(title, 12, yPos + 7);
-    yPos += 15;
+    doc.text(title.toUpperCase(), 15, yPos + 6);
+
+    // Línea sutil debajo
+    doc.setDrawColor(229, 231, 235); // Gray 200
+    doc.setLineWidth(0.1);
+    doc.line(10, yPos + 10, pageWidth - 10, yPos + 10);
+
+    yPos += 18;
   };
 
   /* =========================
-     Portada
+     PORTADA
      ========================= */
-  doc.setFillColor(...GROW_GREEN);
-  doc.rect(0, yPos, pageWidth, 40, 'F');
+  // Fondo oscuro completo para la parte superior de portada
+  doc.setFillColor(...COLOR_DARK_BG);
+  doc.rect(0, 0, pageWidth, 60, 'F');
 
-  doc.setFontSize(20);
+  // Gradiente/acento visual (simulado con rect)
+  doc.setFillColor(...COLOR_PRIMARY);
+  doc.circle(pageWidth, 0, 40, 'F'); // Círculo verde en esquina superior derecha
+
+  // Título Principal
+  doc.setFontSize(24);
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
-  doc.text('INFORME DE AUDITORÍA MÉDICA', pageWidth / 2, yPos + 15, { align: 'center' });
+  doc.text('INFORME DE', 15, 30);
+  doc.text('AUDITORÍA MÉDICA', 15, 40);
 
-  doc.setFontSize(11);
+  // Subtítulo con fecha
+  doc.setFontSize(10);
+  doc.setTextColor(...COLOR_ACCENT);
   doc.setFont('helvetica', 'normal');
-  doc.text('Sanatorio Argentino - Sistema Salus', pageWidth / 2, yPos + 25, { align: 'center' });
-  doc.text('Powered by Grow Labs', pageWidth / 2, yPos + 32, { align: 'center' });
+  const fechaHoy = new Date().toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  doc.text(fechaHoy.charAt(0).toUpperCase() + fechaHoy.slice(1), 15, 50);
 
-  yPos += 50;
+  yPos = 75;
+
+  // Información del Archivo (Card Style)
+  doc.setFillColor(249, 250, 251); // Gray 50
+  doc.setDrawColor(229, 231, 235); // Border Gray 200
+  doc.roundedRect(10, yPos, pageWidth - 20, 20, 2, 2, 'FD');
+
+  doc.setFontSize(9);
+  doc.setTextColor(...COLOR_TEXT_LIGHT);
+  doc.text('ARCHIVO ANALIZADO', 15, yPos + 8);
 
   doc.setFontSize(10);
-  doc.setTextColor(...GROW_DARK);
+  doc.setTextColor(...COLOR_TEXT_MAIN);
   doc.setFont('helvetica', 'bold');
-  doc.text('Fecha de Auditoría:', 10, yPos);
-  doc.setFont('helvetica', 'normal');
-  doc.text(new Date().toLocaleDateString('es-AR'), 60, yPos);
-  yPos += 7;
+  const fileNameText = doc.splitTextToSize(resultado.nombreArchivo, pageWidth - 30);
+  doc.text(fileNameText, 15, yPos + 14);
 
-  doc.setFont('helvetica', 'bold');
-  doc.text('Archivo analizado:', 10, yPos);
-  doc.setFont('helvetica', 'normal');
-  const fileNameText = doc.splitTextToSize(resultado.nombreArchivo, pageWidth - 70);
-  doc.text(fileNameText, 60, yPos);
-  yPos += 10;
-
-  /* =========================
-     Resumen General
-     ========================= */
-  checkPageBreak(30);
-  doc.setFillColor(...LIGHT_GRAY);
-  doc.roundedRect(10, yPos, pageWidth - 20, 25, 3, 3, 'F');
-  doc.setFontSize(9);
-  doc.setTextColor(...GROW_DARK);
-  doc.setFont('helvetica', 'bold');
-  doc.text('RESUMEN GENERAL', 12, yPos + 5);
-  doc.setFont('helvetica', 'normal');
-
-  const resumenText = resultado.pacienteInternado
-    ? `PACIENTE ACTUALMENTE INTERNADO - Los datos corresponden a la internación en curso. Durante la auditoría automatizada se detectaron ${resultado.totalErrores} errores que requieren corrección durante la internación.`
-    : `Durante la auditoría automatizada se detectaron ${resultado.totalErrores} errores que requieren corrección antes del envío a OSDE.`;
-
-  const splitResumen = doc.splitTextToSize(resumenText, pageWidth - 24);
-  doc.text(splitResumen, 12, yPos + 10);
   yPos += 30;
 
   /* =========================
-     Datos del paciente
+     RESUMEN EJECUTIVO (KPIs)
+     ========================= */
+  addSection('RESUMEN EJECUTIVO');
+
+  // Texto del resumen
+  const resumenText = resultado.pacienteInternado
+    ? `PACIENTE INTERNADO. Se han detectado ${resultado.totalErrores} hallazgos que requieren atención durante la internación.`
+    : `AUDITORÍA DE CIERRE. Se detectaron ${resultado.totalErrores} hallazgos antes de la facturación.`;
+
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(...COLOR_TEXT_MAIN);
+  const splitResumen = doc.splitTextToSize(resumenText, pageWidth - 24);
+  doc.text(splitResumen, 12, yPos);
+
+  yPos += splitResumen.length * 5 + 5;
+
+  // KPIs Cards (Simuladas)
+  const kpiY = yPos;
+  const kpiWidth = (pageWidth - 25) / 3;
+  const kpiHeight = 18;
+
+  // KPI 1: Errores
+  const kpi1Color = resultado.totalErrores > 0 ? COLOR_ERROR : COLOR_PRIMARY;
+  doc.setDrawColor(...kpi1Color);
+  doc.setLineWidth(0.5);
+  doc.roundedRect(10, kpiY, kpiWidth, kpiHeight, 2, 2, 'S');
+  doc.setFontSize(8);
+  doc.setTextColor(107, 114, 128);
+  doc.text('HALLAZGOS', 15, kpiY + 6);
+  doc.setFontSize(14);
+  doc.setTextColor(...kpi1Color);
+  doc.setFont('helvetica', 'bold');
+  doc.text(String(resultado.totalErrores), 15, kpiY + 13);
+
+  // KPI 2: Días
+  doc.setDrawColor(31, 41, 55); // Dark border
+  doc.roundedRect(10 + kpiWidth + 2.5, kpiY, kpiWidth, kpiHeight, 2, 2, 'S');
+  doc.setFontSize(8);
+  doc.setTextColor(107, 114, 128);
+  doc.setFont('helvetica', 'normal');
+  doc.text('DÍAS INTERNACIÓN', 15 + kpiWidth + 2.5, kpiY + 6);
+  doc.setFontSize(14);
+  doc.setTextColor(...COLOR_TEXT_MAIN);
+  doc.setFont('helvetica', 'bold');
+  doc.text(String(resultado.diasHospitalizacion), 15 + kpiWidth + 2.5, kpiY + 13);
+
+  // KPI 3: Estado
+  doc.setDrawColor(31, 41, 55);
+  doc.roundedRect(10 + (kpiWidth + 2.5) * 2, kpiY, kpiWidth, kpiHeight, 2, 2, 'S');
+  doc.setFontSize(8);
+  doc.setTextColor(107, 114, 128);
+  doc.setFont('helvetica', 'normal');
+  doc.text('ESTADO', 15 + (kpiWidth + 2.5) * 2, kpiY + 6);
+  doc.setFontSize(10); // Más pequeño para que quepa
+  doc.setTextColor(...COLOR_TEXT_MAIN);
+  doc.setFont('helvetica', 'bold');
+  const estadoCorto = resultado.pacienteInternado ? 'INTERNADO' : resultado.estado.toUpperCase();
+  doc.text(estadoCorto, 15 + (kpiWidth + 2.5) * 2, kpiY + 13);
+
+  yPos += 28;
+
+  /* =========================
+     DATOS DEL PACIENTE
      ========================= */
   addSection('DATOS DEL PACIENTE');
 
+  // Tabla limpia sin bordes verticales, estilo minimalista
   const pacienteData = [
-    ['Nombre', resultado.datosPaciente.nombre || 'No encontrado'],
-    ['DNI', resultado.datosPaciente.dni || 'No encontrado'],
-    ['Fecha de Nacimiento', resultado.datosPaciente.fecha_nacimiento || 'No encontrada'],
-    ['Sexo', resultado.datosPaciente.sexo || 'No encontrado'],
-    ['Obra Social', resultado.datosPaciente.obra_social || 'No encontrada'],
-    ['Habitación', resultado.datosPaciente.habitacion || 'No encontrada'],
+    ['Paciente:', resultado.datosPaciente.nombre || 'No identificado'],
+    ['DNI:', resultado.datosPaciente.dni || 'No identificado'],
+    ['Obra Social:', resultado.datosPaciente.obra_social || 'No identificada'],
+    ['Habitación:', resultado.datosPaciente.habitacion || 'No identificada'],
+    ['Ingreso:', formatDate(resultado.fechaIngreso)],
+    ['Egreso:', resultado.pacienteInternado ? 'En curso' : formatDate(resultado.fechaAlta)],
   ];
 
   autoTable(doc, {
     startY: yPos,
-    head: [],
     body: pacienteData,
-    theme: 'grid',
-    styles: { fontSize: 9, cellPadding: 3 },
+    theme: 'plain',
+    styles: { fontSize: 10, cellPadding: 2, textColor: COLOR_TEXT_MAIN as any },
     columnStyles: {
-      0: { fontStyle: 'bold', cellWidth: 50 },
+      0: { fontStyle: 'bold', cellWidth: 35, textColor: COLOR_TEXT_LIGHT as any },
       1: { cellWidth: 'auto' },
     },
     margin: { left: 10, right: 10 },
@@ -239,468 +335,177 @@ export async function generateAuditPDF(resultado: ResultadoAuditoria, downloadPD
   yPos = (doc as any).lastAutoTable.finalY + 10;
 
   /* =========================
-     Período de hospitalización
+     NUEVO: SECUENCIA DE INTERNACIÓN (DETALLE DÍA A DÍA)
      ========================= */
-  addSection('PERÍODO DE HOSPITALIZACIÓN');
+  if (resultado.listaDiasInternacion && resultado.listaDiasInternacion.length > 0) {
+    addSection('SECUENCIA DE INTERNACIÓN (DÍA A DÍA)');
 
-  const hospitalizacionData = [
-    ['Fecha de Ingreso', formatDate(resultado.fechaIngreso)],
-    ['Fecha de Alta', resultado.pacienteInternado ? 'Paciente Internado (Sin alta registrada)' : formatDate(resultado.fechaAlta)],
-    ['Días de ' + (resultado.pacienteInternado ? 'internación' : 'hospitalización'), `${resultado.diasHospitalizacion} días`],
-  ];
+    // Preparar datos para tabla
+    const diasBody = resultado.listaDiasInternacion.map(dia => {
+      // Formatear estudios
+      const estudiosCount = dia.estudios.length;
+      const estudiosText = estudiosCount > 0
+        ? `${estudiosCount} (${dia.estudios.map(e => e.tipo).join(', ').slice(0, 30)}${dia.estudios.map(e => e.tipo).join(', ').length > 30 ? '...' : ''})`
+        : '-';
 
-  autoTable(doc, {
-    startY: yPos,
-    head: [],
-    body: hospitalizacionData,
-    theme: 'grid',
-    styles: { fontSize: 9, cellPadding: 3 },
-    columnStyles: {
-      0: { fontStyle: 'bold', cellWidth: 50 },
-      1: { cellWidth: 'auto' },
-    },
-    margin: { left: 10, right: 10 },
-  });
-
-  yPos = (doc as any).lastAutoTable.finalY + 10;
-
-  /* =========================
-     Síntesis del análisis (incluye KPI de Estudios si existen)
-     ========================= */
-  addSection('SÍNTESIS DEL ANÁLISIS');
-
-  const sintesisData: Array<[string, string]> = [
-    ['Errores de admisión', resultado.erroresAdmision.length.toString()],
-    ['Errores en evoluciones', resultado.erroresEvolucion.length.toString()],
-    ['Evoluciones repetidas', resultado.evolucionesRepetidas.length.toString()],
-    ['Advertencias', (resultado.advertencias?.length || 0).toString()],
-    ['Errores foja quirúrgica', resultado.erroresFoja.length.toString()],
-    ['Errores alta médica', resultado.erroresAltaMedica.length.toString()],
-    ['Errores epicrisis', resultado.erroresEpicrisis.length.toString()],
-    ['Comunicaciones generadas', resultado.comunicaciones.length.toString()],
-  ];
-
-  if (resultado.estudiosConteo && typeof resultado.estudiosConteo.total === 'number') {
-    sintesisData.push(
-      ['Estudios detectados (total)', String(resultado.estudiosConteo.total)],
-      ['— Imágenes', String(resultado.estudiosConteo.imagenes)],
-      ['— Laboratorio', String(resultado.estudiosConteo.laboratorio)],
-      ['— Procedimientos', String(resultado.estudiosConteo.procedimientos)],
-    );
-  }
-
-  autoTable(doc, {
-    startY: yPos,
-    head: [],
-    body: sintesisData,
-    theme: 'striped',
-    styles: { fontSize: 9, cellPadding: 3 },
-    columnStyles: {
-      0: { fontStyle: 'bold', cellWidth: 80 },
-      1: { cellWidth: 'auto', halign: 'center' },
-    },
-    margin: { left: 10, right: 10 },
-  });
-
-  yPos = (doc as any).lastAutoTable.finalY + 10;
-
-  /* =========================
-     Errores (bloques existentes)
-     ========================= */
-  if (resultado.erroresAdmision.length > 0) {
-    addSection('ERRORES DE ADMISIÓN', ERROR_RED);
-    resultado.erroresAdmision.forEach((error) => {
-      checkPageBreak(20);
-      doc.setFillColor(254, 226, 226);
-      doc.roundedRect(10, yPos, pageWidth - 20, 15, 2, 2, 'F');
-      doc.setFontSize(8);
-      doc.setTextColor(...ERROR_RED);
-      doc.setFont('helvetica', 'bold');
-      doc.text('CRÍTICO', 12, yPos + 4);
-      doc.setTextColor(...GROW_DARK);
-      doc.setFont('helvetica', 'normal');
-      const errorText = doc.splitTextToSize(error, pageWidth - 24);
-      doc.text(errorText, 12, yPos + 8);
-      yPos += 18;
-    });
-  }
-
-  if (resultado.erroresEvolucion.length > 0) {
-    addSection('ERRORES EN EVOLUCIONES MÉDICAS', ERROR_RED);
-    resultado.erroresEvolucion.forEach((error) => {
-      checkPageBreak(25);
-      doc.setFillColor(254, 226, 226);
-      doc.roundedRect(10, yPos, pageWidth - 20, 20, 2, 2, 'F');
-      doc.setFontSize(8);
-      doc.setTextColor(...ERROR_RED);
-      doc.setFont('helvetica', 'bold');
-      doc.text('CRÍTICO', 12, yPos + 4);
-      doc.setTextColor(...GROW_DARK);
-      doc.setFont('helvetica', 'normal');
-      const errorText = doc.splitTextToSize(error, pageWidth - 24);
-      doc.text(errorText, 12, yPos + 8);
-      doc.setFontSize(7);
-      doc.text('Impacto: Impide el cierre completo de la internación y puede generar débitos.', 12, yPos + 15);
-      yPos += 23;
-    });
-  }
-
-  if (resultado.evolucionesRepetidas.length > 0) {
-    addSection('EVOLUCIONES REPETIDAS', WARNING_YELLOW);
-    resultado.evolucionesRepetidas.forEach((ev) => {
-      checkPageBreak(25);
-      doc.setFillColor(254, 243, 199);
-      doc.roundedRect(10, yPos, pageWidth - 20, 20, 2, 2, 'F');
-      doc.setFontSize(8);
-      doc.setTextColor(...WARNING_YELLOW);
-      doc.setFont('helvetica', 'bold');
-      doc.text('ADVERTENCIA', 12, yPos + 4);
-      doc.setTextColor(...GROW_DARK);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`Fecha: ${ev.fecha}`, 12, yPos + 8);
-      const textoEv = doc.splitTextToSize(ev.texto, pageWidth - 24);
-      doc.text(textoEv, 12, yPos + 12);
-      yPos += 23;
-    });
-  }
-
-  if (resultado.advertencias && resultado.advertencias.length > 0) {
-    addSection('ADVERTENCIAS', WARNING_YELLOW);
-    resultado.advertencias.forEach((adv) => {
-      checkPageBreak(25);
-      doc.setFillColor(254, 243, 199);
-      doc.roundedRect(10, yPos, pageWidth - 20, 20, 2, 2, 'F');
-      doc.setFontSize(8);
-      doc.setTextColor(...WARNING_YELLOW);
-      doc.setFont('helvetica', 'bold');
-      doc.text('ADVERTENCIA', 12, yPos + 4);
-      doc.setTextColor(...GROW_DARK);
-      doc.setFont('helvetica', 'normal');
-      doc.text(adv.tipo, 12, yPos + 8);
-      const descText = doc.splitTextToSize(adv.descripcion, pageWidth - 24);
-      doc.text(descText, 12, yPos + 12);
-      if (adv.fecha) doc.text(`Fecha: ${adv.fecha}`, 12, yPos + 16);
-      yPos += 23;
-    });
-  }
-
-  if (resultado.erroresFoja.length > 0) {
-    addSection('ERRORES EN FOJA QUIRÚRGICA', ERROR_RED);
-    resultado.erroresFoja.forEach((error) => {
-      checkPageBreak(15);
-      doc.setFillColor(254, 226, 226);
-      doc.roundedRect(10, yPos, pageWidth - 20, 12, 2, 2, 'F');
-      doc.setFontSize(8);
-      doc.setTextColor(...ERROR_RED);
-      doc.setFont('helvetica', 'bold');
-      doc.text('CRÍTICO', 12, yPos + 4);
-      doc.setTextColor(...GROW_DARK);
-      doc.setFont('helvetica', 'normal');
-      const errorText = doc.splitTextToSize(error, pageWidth - 24);
-      doc.text(errorText, 12, yPos + 8);
-      yPos += 15;
-    });
-  }
-
-  if (resultado.erroresAltaMedica.length > 0) {
-    addSection('ERRORES DE ALTA MÉDICA', ERROR_RED);
-    resultado.erroresAltaMedica.forEach((error) => {
-      checkPageBreak(20);
-      doc.setFillColor(254, 226, 226);
-      doc.roundedRect(10, yPos, pageWidth - 20, 17, 2, 2, 'F');
-      doc.setFontSize(8);
-      doc.setTextColor(...ERROR_RED);
-      doc.setFont('helvetica', 'bold');
-      doc.text('CRÍTICO', 12, yPos + 4);
-      doc.setTextColor(...GROW_DARK);
-      doc.setFont('helvetica', 'normal');
-      const errorText = doc.splitTextToSize(error, pageWidth - 24);
-      doc.text(errorText, 12, yPos + 8);
-      doc.setFontSize(7);
-      doc.text('Impacto: Impide el cierre correcto de la internación.', 12, yPos + 13);
-      yPos += 20;
-    });
-  }
-
-  if (resultado.erroresEpicrisis.length > 0) {
-    addSection('ERRORES DE EPICRISIS', ERROR_RED);
-    resultado.erroresEpicrisis.forEach((error) => {
-      checkPageBreak(20);
-      doc.setFillColor(254, 226, 226);
-      doc.roundedRect(10, yPos, pageWidth - 20, 17, 2, 2, 'F');
-      doc.setFontSize(8);
-      doc.setTextColor(...ERROR_RED);
-      doc.setFont('helvetica', 'bold');
-      doc.text('CRÍTICO', 12, yPos + 4);
-      doc.setTextColor(...GROW_DARK);
-      doc.setFont('helvetica', 'normal');
-      const errorText = doc.splitTextToSize(error, pageWidth - 24);
-      doc.text(errorText, 12, yPos + 8);
-      doc.setFontSize(7);
-      doc.text('Impacto: Impide el cierre correcto de la internación.', 12, yPos + 13);
-      yPos += 20;
-    });
-  }
-
-  /* =========================
-     NUEVO: Errores de Estudios (si existen)
-     ========================= */
-  if (resultado.erroresEstudios && resultado.erroresEstudios.length > 0) {
-    addSection('ERRORES EN ESTUDIOS', ERROR_RED);
-    resultado.erroresEstudios.forEach((error) => {
-      checkPageBreak(20);
-      doc.setFillColor(254, 226, 226);
-      doc.roundedRect(10, yPos, pageWidth - 20, 17, 2, 2, 'F');
-      doc.setFontSize(8);
-      doc.setTextColor(...ERROR_RED);
-      doc.setFont('helvetica', 'bold');
-      doc.text('CRÍTICO', 12, yPos + 4);
-      doc.setTextColor(...GROW_DARK);
-      doc.setFont('helvetica', 'normal');
-      const errorText = doc.splitTextToSize(error, pageWidth - 24);
-      doc.text(errorText, 12, yPos + 8);
-      doc.setFontSize(7);
-      doc.text('Impacto: si no hay informe/resultado, OSDE puede debitar el estudio.', 12, yPos + 13);
-      yPos += 20;
-    });
-  }
-
-  /* =========================
-     NUEVO: Estudios realizados (tabla + resultados)
-     ========================= */
-  if (resultado.estudios && resultado.estudios.length > 0) {
-    addSection('ESTUDIOS REALIZADOS');
-
-    // Tabla con metadatos de estudios
-    const estudiosBody = resultado.estudios.map((e) => {
-      const fechaHora = [e.fecha || '—', e.hora || ''].join(' ').trim();
       return [
-        e.categoria || '—',
-        e.tipo || '—',
-        fechaHora || '—',
-        e.lugar || '—',
-        e.informe_presente ? 'Sí' : 'No',
-        (e.advertencias?.length ? e.advertencias.join(', ') : '—'),
+        formatDate(dia.fecha),
+        dia.tieneEvolucion ? 'SÍ' : 'NO',
+        dia.tieneFojaQuirurgica ? 'SÍ' : '-',
+        estudiosText
       ];
     });
 
     autoTable(doc, {
       startY: yPos,
-      head: [['Categoría', 'Tipo', 'Fecha/Hora', 'Lugar', 'Informe', 'Advertencias']],
-      body: estudiosBody,
+      head: [['Fecha', 'Evolución', 'Qx', 'Estudios Realizados']],
+      body: diasBody,
       theme: 'grid',
-      styles: { fontSize: 8, cellPadding: 2 },
-      headStyles: { fillColor: [243, 244, 246], textColor: GROW_DARK as any, fontStyle: 'bold' },
-      columnStyles: {
-        0: { cellWidth: 28 },
-        1: { cellWidth: 50 },
-        2: { cellWidth: 30 },
-        3: { cellWidth: 30 },
-        4: { cellWidth: 18, halign: 'center' },
-        5: { cellWidth: 'auto' },
+      headStyles: {
+        fillColor: COLOR_DARK_BG as any,
+        textColor: 255,
+        fontStyle: 'bold',
+        halign: 'center'
       },
-      margin: { left: 10, right: 10 },
+      bodyStyles: {
+        textColor: COLOR_TEXT_MAIN as any,
+        fontSize: 9
+      },
+      columnStyles: {
+        0: { cellWidth: 30, halign: 'center' }, // Fecha
+        1: { cellWidth: 25, halign: 'center', fontStyle: 'bold' }, // Evolución (importante)
+        2: { cellWidth: 15, halign: 'center' }, // Qx
+        3: { cellWidth: 'auto' }, // Estudios
+      },
+      // Colorear filas según estado
+      didParseCell: function (data) {
+        if (data.section === 'body' && data.column.index === 1) {
+          const val = data.cell.raw;
+          if (val === 'NO') {
+            data.cell.styles.textColor = [220, 38, 38]; // Rojo si falta evolución
+          } else {
+            data.cell.styles.textColor = [34, 197, 94]; // Verde si está ok
+          }
+        }
+      },
+      margin: { left: 10, right: 10 }
     });
 
-    yPos = (doc as any).lastAutoTable.finalY + 8;
-
-    // Bloque de Resultados / Impresiones (solo para los que traen texto)
-    const conResultado = resultado.estudios.filter((e) => e.resultado && e.resultado.trim().length > 0);
-    if (conResultado.length > 0) {
-      checkPageBreak(12);
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Resultados / Impresiones:', 10, yPos);
-      yPos += 6;
-
-      conResultado.forEach((e, idx) => {
-        const header = `• ${e.tipo} (${e.categoria}${e.fecha ? ` - ${e.fecha}` : ''}${e.hora ? ` ${e.hora}` : ''})`;
-        const headerLines = doc.splitTextToSize(header, pageWidth - 24);
-        const resultLines = doc.splitTextToSize(e.resultado!, pageWidth - 24);
-
-        // estimar espacio
-        const needed = 6 + headerLines.length * 4 + resultLines.length * 4 + 3;
-        checkPageBreak(needed);
-
-        doc.setFontSize(8.5);
-        doc.setFont('helvetica', 'bold');
-        doc.text(headerLines, 12, yPos);
-        yPos += headerLines.length * 4 + 2;
-
-        doc.setFont('helvetica', 'normal');
-        doc.text(resultLines, 12, yPos);
-        yPos += resultLines.length * 4 + 3;
-      });
-      yPos += 2;
-    }
+    yPos = (doc as any).lastAutoTable.finalY + 15;
   }
 
   /* =========================
-     Bloque "OK" si no hubo errores
+     ESTUDIOS Y PRÁCTICAS
      ========================= */
-  if (resultado.totalErrores === 0) {
-    checkPageBreak(20);
-    doc.setFillColor(220, 252, 231);
-    doc.roundedRect(10, yPos, pageWidth - 20, 15, 3, 3, 'F');
-    doc.setFontSize(10);
-    doc.setTextColor(...GROW_GREEN);
-    doc.setFont('helvetica', 'bold');
-    doc.text('No se detectaron errores', 12, yPos + 6);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...GROW_DARK);
-    doc.text('La historia clínica está completa y lista para el envío a OSDE', 12, yPos + 11);
-    yPos += 18;
-  }
+  if (resultado.estudios && resultado.estudios.length > 0) {
+    addSection('ESTUDIOS Y PRÁCTICAS');
 
-  /* =========================
-     Comunicaciones generadas
-     ========================= */
-  if (resultado.comunicaciones.length > 0) {
-    addSection('COMUNICACIONES GENERADAS');
-    resultado.comunicaciones.forEach((com, idx) => {
-      checkPageBreak(50);
-
-      let bgColor: number[] = LIGHT_GRAY;
-      if (com.urgencia === 'CRÍTICA') bgColor = [254, 226, 226];
-      else if (com.urgencia === 'ALTA') bgColor = [255, 237, 213];
-      else bgColor = [254, 243, 199];
-
-      doc.setFillColor(...bgColor);
-      doc.roundedRect(10, yPos, pageWidth - 20, 45, 3, 3, 'F');
-
-      doc.setFontSize(10);
-      doc.setTextColor(...GROW_DARK);
-      doc.setFont('helvetica', 'bold');
-      doc.text(`Comunicación N.º ${idx + 1}`, 12, yPos + 5);
-      doc.setFontSize(8);
-      doc.text(com.urgencia, pageWidth - 12, yPos + 5, { align: 'right' });
-
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`Sector: ${com.sector}`, 12, yPos + 10);
-      doc.text(`Responsable: ${com.responsable}${com.matricula ? ' (MP: ' + com.matricula + ')' : ''}`, 12, yPos + 15);
-      doc.text(`Motivo: ${com.motivo}`, 12, yPos + 20);
-
-      doc.setFont('helvetica', 'bold');
-      doc.text('Mensaje:', 12, yPos + 26);
-      doc.setFont('helvetica', 'italic');
-      const mensajeText = doc.splitTextToSize(com.mensaje, pageWidth - 24);
-      doc.text(mensajeText, 12, yPos + 31);
-
-      yPos += 48;
-
-      if (com.errores.length > 0) {
-        checkPageBreak(15 + com.errores.length * 5);
-        doc.setFontSize(8);
-        doc.setFont('helvetica', 'bold');
-        doc.text('Errores asociados:', 12, yPos);
-        yPos += 4;
-        doc.setFont('helvetica', 'normal');
-        com.errores.forEach((error) => {
-          const errorLines = doc.splitTextToSize(`• ${error}`, pageWidth - 26);
-          doc.text(errorLines, 14, yPos);
-          yPos += errorLines.length * 4;
-        });
-        yPos += 5;
-      }
-    });
-  }
-
-  /* =========================
-     Verificaciones adicionales (foja)
-     ========================= */
-  if (resultado.resultadosFoja) {
-    addSection('VERIFICACIONES ADICIONALES');
-
-    const verificacionesData = [
-      ['Alta médica', resultado.erroresAltaMedica.length > 0 ? 'Faltante' : 'Presente y correcta'],
-      ['Epicrisis', resultado.erroresEpicrisis.length > 0 ? 'Faltante' : 'Detectada correctamente'],
-      ['Foja quirúrgica', resultado.erroresFoja.some((e) => e.includes('foja')) ? 'No encontrada' : 'Completa'],
-      [
-        'Bisturí Armónico',
-        resultado.resultadosFoja.bisturi_armonico === 'SI'
-          ? 'Utilizado - REQUIERE AUTORIZACIÓN'
-          : resultado.resultadosFoja.bisturi_armonico === 'NO'
-          ? 'No utilizado'
-          : 'No determinado',
-      ],
-    ];
+    // Tabla Detallada
+    const estudiosBody = resultado.estudios.map((e) => [
+      e.categoria,
+      e.tipo,
+      e.resultado && e.resultado.length > 5 ? 'Presente' : 'Pendiente/No detectado',
+      e.informe_presente ? 'OK' : 'FALTANTE'
+    ]);
 
     autoTable(doc, {
       startY: yPos,
-      head: [],
-      body: verificacionesData,
-      theme: 'grid',
-      styles: { fontSize: 9, cellPadding: 3 },
+      head: [['Categoría', 'Estudio', 'Resultado', 'Informe PDF']],
+      body: estudiosBody,
+      theme: 'striped', // Striped para fácil lectura
+      headStyles: {
+        fillColor: [243, 244, 246] as any, // Gris muy claro
+        textColor: COLOR_TEXT_MAIN as any,
+        fontStyle: 'bold',
+        lineColor: [229, 231, 235] as any,
+        lineWidth: 0.1
+      },
+      styles: { fontSize: 9, cellPadding: 3, textColor: COLOR_TEXT_MAIN as any },
       columnStyles: {
-        0: { fontStyle: 'bold', cellWidth: 70 },
-        1: { cellWidth: 'auto' },
+        0: { cellWidth: 35 },
+        1: { cellWidth: 'auto', fontStyle: 'bold' },
+        2: { cellWidth: 40 },
+        3: { cellWidth: 25, halign: 'center', fontStyle: 'bold' },
+      },
+      didParseCell: function (data) {
+        if (data.section === 'body' && data.column.index === 3) {
+          if (data.cell.raw === 'FALTANTE') {
+            data.cell.styles.textColor = COLOR_ERROR as any;
+          } else {
+            data.cell.styles.textColor = COLOR_PRIMARY as any;
+          }
+        }
       },
       margin: { left: 10, right: 10 },
     });
 
     yPos = (doc as any).lastAutoTable.finalY + 10;
-
-    if (resultado.resultadosFoja.equipo_quirurgico.length > 0) {
-      checkPageBreak(20);
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Equipo quirúrgico:', 10, yPos);
-      yPos += 5;
-      doc.setFont('helvetica', 'normal');
-      resultado.resultadosFoja.equipo_quirurgico.forEach((miembro) => {
-        doc.text(`• ${miembro.rol.charAt(0).toUpperCase() + miembro.rol.slice(1)}: ${miembro.nombre}`, 12, yPos);
-        yPos += 5;
-      });
-      yPos += 5;
-    }
   }
 
   /* =========================
-     Conclusión final
+     HALLAZGOS Y ERRORES (Bloque unificado)
      ========================= */
-  addSection('CONCLUSIÓN FINAL', GROW_DARK);
+  const tieneErrores = resultado.totalErrores > 0;
+  if (tieneErrores) {
+    addSection('DETALLE DE HALLAZGOS POR ÁREA');
 
-  checkPageBreak(35);
-  doc.setFillColor(243, 244, 246);
-  doc.roundedRect(10, yPos, pageWidth - 20, 30, 3, 3, 'F');
+    const printErrorBlock = (titulo: string, lista: string[], color: number[] = COLOR_ERROR) => {
+      if (!lista || lista.length === 0) return;
 
-  doc.setFontSize(9);
-  doc.setTextColor(...GROW_DARK);
-  doc.setFont('helvetica', 'normal');
+      checkPageBreak(25);
+      doc.setFontSize(10);
+      doc.setTextColor(...color);
+      doc.setFont('helvetica', 'bold');
+      doc.text(titulo, 12, yPos);
+      yPos += 6;
 
-  const conclusion = resultado.pacienteInternado
-    ? resultado.totalErrores > 0
-      ? `El paciente se encuentra actualmente INTERNADO. Se detectaron ${resultado.totalErrores} errores que deben corregirse durante la internación para facilitar el proceso de cierre posterior.`
-      : `El paciente se encuentra actualmente INTERNADO. La documentación está completa hasta el momento. Continuar registrando las evoluciones diarias.`
-    : resultado.totalErrores > 0
-    ? `El documento se encuentra en revisión, con necesidad de corrección antes del envío a OSDE. Una vez completadas las correcciones, el caso podrá marcarse como Aprobado.`
-    : `El documento está completo y aprobado. Puede proceder con el envío a OSDE.`;
+      doc.setFontSize(9);
+      doc.setTextColor(...COLOR_TEXT_MAIN);
+      doc.setFont('helvetica', 'normal');
 
-  const conclusionText = doc.splitTextToSize(conclusion, pageWidth - 24);
-  doc.text(conclusionText, 12, yPos + 5);
+      lista.forEach(item => {
+        const itemText = doc.splitTextToSize(`• ${item}`, pageWidth - 25);
+        checkPageBreak(itemText.length * 5 + 5);
+        doc.text(itemText, 15, yPos);
+        yPos += itemText.length * 5 + 2;
+      });
+      yPos += 5;
+    };
 
-  doc.setFont('helvetica', 'bold');
-  doc.text('Estado actual:', 12, yPos + 18);
-  doc.setFont('helvetica', 'normal');
-  const estado = resultado.pacienteInternado ? 'Paciente Internado' : resultado.estado;
-  doc.text(estado, 45, yPos + 18);
+    printErrorBlock('ERRORES DE ADMISIÓN', resultado.erroresAdmision);
+    printErrorBlock('ERRORES EN EVOLUCIONES', resultado.erroresEvolucion);
+    printErrorBlock('ERRORES EN FOJA QUIRÚRGICA', resultado.erroresFoja);
+    printErrorBlock('ERRORES EN ESTUDIOS', resultado.erroresEstudios || []);
+    printErrorBlock('ERRORES DE EPICRISIS / ALTA', [...resultado.erroresAltaMedica, ...resultado.erroresEpicrisis]);
+  } else {
+    // Success message
+    addSection('RESULTADO DE AUDITORÍA');
+    checkPageBreak(30);
+    doc.setFillColor(220, 252, 231); // Green 100
+    doc.setDrawColor(...COLOR_PRIMARY);
+    doc.roundedRect(10, yPos, pageWidth - 20, 20, 2, 2, 'FD');
 
-  /* =========================
-     Header/Footer en todas las páginas
-     ========================= */
+    doc.setFontSize(11);
+    doc.setTextColor(...COLOR_PRIMARY); // Green 700ish
+    doc.setFont('helvetica', 'bold');
+    doc.text('AUDITORÍA APROBADA', 15, yPos + 8);
+
+    doc.setFontSize(9);
+    doc.setTextColor(...COLOR_TEXT_MAIN);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Toda la documentación obligatoria ha sido verificada correctamente.', 15, yPos + 15);
+
+    yPos += 30;
+  }
+
+  // Agregar Footer a todas las paginas al final
   const totalPages = doc.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
     addHeaderFooter(i, totalPages);
   }
 
-  /* =========================
-     Salida
-     ========================= */
-  const fileName = `Auditoria_${resultado.datosPaciente.nombre || 'Paciente'}_${new Date()
-    .toLocaleDateString('es-AR')
-    .replace(/\//g, '-')}.pdf`;
+  const fileName = `Auditoria_${resultado.datosPaciente.nombre || 'Paciente'}_${new Date().toISOString().split('T')[0]}.pdf`;
 
   if (downloadPDF) doc.save(fileName);
 
