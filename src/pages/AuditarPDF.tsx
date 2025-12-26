@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Upload, FileCheck, Loader2 } from 'lucide-react';
+import { Upload, FileCheck, Loader2, Calendar } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
-import { InformeAuditoria } from '../components/InformeAuditoria';
+import { InformeAuditoria, CollapsibleSection } from '../components/InformeAuditoria';
 import { supabaseUrl, supabaseAnonKey } from '../lib/supabase';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
@@ -359,9 +359,14 @@ export function AuditarPDF() {
 
           {/* Tabla de días de internación */}
           {resultado.listaDiasInternacion && resultado.listaDiasInternacion.length > 0 && (
-            <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">Días de Internación</h2>
-              <div className="overflow-x-auto">
+            <CollapsibleSection
+              title="Días de Internación"
+              icon={Calendar}
+              defaultOpen={false}
+              badge={`${resultado.listaDiasInternacion.length} días`}
+              badgeColor="bg-blue-500"
+            >
+              <div className="overflow-x-auto rounded-lg">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
@@ -431,7 +436,7 @@ export function AuditarPDF() {
                   </tbody>
                 </table>
               </div>
-            </div>
+            </CollapsibleSection>
           )}
 
           <InformeAuditoria resultado={resultado} auditoriaId={auditoriaId || undefined} />

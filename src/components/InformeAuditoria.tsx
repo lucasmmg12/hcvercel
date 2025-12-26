@@ -40,7 +40,7 @@ interface ResultadoAuditoria {
 }
 
 // ===== COMPONENTES AUXILIARES =====
-function CollapsibleSection({
+export function CollapsibleSection({
   title,
   icon: Icon,
   children,
