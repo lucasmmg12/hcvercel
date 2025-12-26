@@ -1742,16 +1742,21 @@ function analizarFojaQuirurgica(texto: string): ResultadosFoja {
       /visita\s+(\d{1,2}\/\d{1,2}\/\d{4})\s+(\d{1,2}:\d{2})/i,
       /intervenci[oó]n\s+planificada\s+para\s+(\d{1,2}\/\d{1,2}\/\d{4})\s+(\d{1,2}:\d{2})/i,
       /(\d{1,2}\/\d{1,2}\/\d{4})\s+(\d{1,2}:\d{2})/i, // Fecha y hora juntas
+      /(?:^|\s|:)(\d{1,2}\/\d{1,2}\/\d{4})(?:\s|$|,|\.)/i, // Fecha sola (captura generica en bloque anterior)
     ];
 
     let fechaEncontradaAntes: string | null = null;
     let horaEncontradaAntes: string | null = null;
 
     for (const patron of patronesFechaAnterior) {
-      const match = bloqueAnterior.match(patron);
-      if (match) {
-        fechaEncontradaAntes = match[1];
-        horaEncontradaAntes = match[2] || null;
+      // Usar matchAll y tomar el ULTIMO resultado (más cercano a la foja)
+      const matches = [...bloqueAnterior.matchAll(new RegExp(patron, 'gi'))];
+      if (matches.length > 0) {
+        const lastMatch = matches[matches.length - 1];
+        fechaEncontradaAntes = lastMatch[1];
+        if (lastMatch[2]) {
+          horaEncontradaAntes = lastMatch[2];
+        }
         break;
       }
     }
