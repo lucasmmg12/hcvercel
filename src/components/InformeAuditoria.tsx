@@ -449,22 +449,20 @@ export function InformeAuditoria({ resultado, auditoriaId }: { resultado: Result
         )}
 
         {/* CSS Animations */}
-      </div>
-
-      {/* Modal de Confirmación */}
-      {comunicacionSeleccionada !== null && (
-        <ConfirmacionEnvioModal
-          isOpen={modalConfirmacionAbierto}
-          onClose={() => setModalConfirmacionAbierto(false)}
-          onConfirm={handleConfirmarEnvio}
-          comunicacion={resultado.comunicaciones[comunicacionSeleccionada]}
-          datosPaciente={resultado.datosPaciente}
-          nombreArchivo={resultado.nombreArchivo}
-          isLoading={enviando}
-          numeroDestino={numeroDestino}
-          onNumeroDestinoChange={setNumeroDestino}
-        />
-      )}
-    </>
-  );
+        {/* Modal de Confirmación */}
+        {comunicacionSeleccionada !== null && (
+          <ConfirmacionEnvioModal
+            isOpen={modalConfirmacionAbierto}
+            onClose={() => setModalConfirmacionAbierto(false)}
+            onConfirm={handleConfirmarEnvio}
+            comunicacion={resultado.comunicaciones[comunicacionSeleccionada]}
+            datosPaciente={resultado.datosPaciente}
+            nombreArchivo={resultado.nombreArchivo}
+            isLoading={enviando}
+            numeroDestino={numeroDestino}
+            onNumeroDestinoChange={setNumeroDestino}
+          />
+        )}
+      </>
+      );
 }
