@@ -180,23 +180,9 @@ export function InformeAuditoria({ resultado, auditoriaId }: { resultado: Result
 
   return (
     <>
-      <div
-        className="min-h-screen relative py-8 px-4 overflow-hidden"
-        style={{
-          backgroundImage: 'url(/fondogrow.png)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat',
-        }}
-      >
-        {/* Overlay oscuro */}
-        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
-
-        {/* Efectos de luz verde */}
-        <div className="absolute top-20 left-20 w-96 h-96 bg-green-500/20 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-20 right-20 w-96 h-96 bg-green-400/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
-
-        <div className="max-w-7xl mx-auto relative z-10">
+      return (
+      <>
+        <div className="w-full">
 
           {/* Header con glassmorphism */}
           <div
@@ -463,43 +449,6 @@ export function InformeAuditoria({ resultado, auditoriaId }: { resultado: Result
         )}
 
         {/* CSS Animations */}
-        <style>{`
-          @keyframes borderGlow {
-            0%, 100% {
-              opacity: 0.3;
-            }
-            50% {
-              opacity: 0.8;
-            }
-          }
-          
-          .delay-150 {
-            animation-delay: 150ms;
-          }
-          
-          .delay-300 {
-            animation-delay: 300ms;
-          }
-          
-          .delay-1000 {
-            animation-delay: 1000ms;
-          }
-
-          @keyframes slide-in {
-            from {
-              transform: translateX(100%);
-              opacity: 0;
-            }
-            to {
-              transform: translateX(0);
-              opacity: 1;
-            }
-          }
-
-          .animate-slide-in {
-            animation: slide-in 0.3s ease-out;
-          }
-        `}</style>
       </div>
 
       {/* Modal de Confirmación */}

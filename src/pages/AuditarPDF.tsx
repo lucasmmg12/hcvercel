@@ -288,39 +288,47 @@ export function AuditarPDF() {
       </div>
 
       {!resultado && (
-        <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-8 border-2 border-dashed border-gray-300 hover:border-green-500 transition-colors">
+        <div className="glass-card rounded-xl p-10 border border-white/10 hover:border-green-500/50 transition-all duration-300 group">
           <div className="text-center">
             <div className="mb-6 flex justify-center">
               {isProcessing ? (
-                <Loader2 className="w-16 h-16 text-blue-600 animate-spin" />
+                <div className="relative">
+                  <div className="absolute inset-0 bg-green-500 blur-xl opacity-20 animate-pulse"></div>
+                  <Loader2 className="w-20 h-20 text-green-400 animate-spin relative z-10" />
+                </div>
               ) : (
-                <Upload className="w-16 h-16 text-gray-400" />
+                <div className="relative group-hover:scale-110 transition-transform duration-300">
+                  <div className="absolute inset-0 bg-green-500 blur-2xl opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+                  <Upload className="w-20 h-20 text-gray-500 group-hover:text-green-400 transition-colors" />
+                </div>
               )}
             </div>
 
             {isProcessing ? (
               <div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  Procesando archivo...
+                <h3 className="text-2xl font-bold text-white mb-2 animate-pulse">
+                  Procesando Historia Clínica...
                 </h3>
-                <p className="text-gray-600">
-                  Esto puede tardar unos momentos. Por favor espere.
+                <p className="text-gray-400">
+                  Analizando fojas, detectando prácticas y buscando errores con IA.
                 </p>
               </div>
             ) : (
               <div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  Seleccione un archivo PDF
+                <h3 className="text-2xl font-bold text-white mb-3">
+                  Cargar Historia Clínica
                 </h3>
-                <p className="text-gray-600 mb-6">
-                  Formatos aceptados: PDF únicamente
+                <p className="text-gray-400 mb-8 max-w-lg mx-auto">
+                  Arrastre su archivo PDF aquí o haga clic para seleccionar.
+                  <br />
+                  <span className="text-sm text-gray-500">Solo archivos PDF permitidos</span>
                 </p>
 
                 <label
                   htmlFor="pdf-upload"
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-all shadow-lg hover:shadow-xl cursor-pointer"
+                  className="inline-flex items-center gap-3 px-8 py-4 bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl transition-all shadow-[0_0_20px_rgba(34,197,94,0.3)] hover:shadow-[0_0_30px_rgba(34,197,94,0.5)] hover:scale-105 cursor-pointer group/btn"
                 >
-                  <FileCheck className="w-5 h-5" />
+                  <FileCheck className="w-6 h-6 group-hover/btn:rotate-12 transition-transform" />
                   Seleccionar PDF
                 </label>
                 <input
@@ -334,8 +342,11 @@ export function AuditarPDF() {
             )}
 
             {error && (
-              <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-red-700 font-medium">{error}</p>
+              <div className="mt-8 p-4 bg-red-500/10 border border-red-500/30 rounded-lg backdrop-blur-sm">
+                <p className="text-red-400 font-medium flex items-center justify-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                  {error}
+                </p>
               </div>
             )}
           </div>
