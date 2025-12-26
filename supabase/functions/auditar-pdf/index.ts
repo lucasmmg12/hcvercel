@@ -1760,8 +1760,9 @@ function analizarFojaQuirurgica(texto: string): ResultadosFoja {
     const trozoValidacion = texto.substring(inicio, Math.min(inicio + 4000, texto.length));
 
     // Detectar si es una endoscopía o procedimiento endoscópico
-    // Detectar si es una endoscopía o procedimiento endoscópico (soporte para terminaciones a/o)
-    const esEndoscopia = /\b(endoscop[ií]a|gastroscop[ií]a|colonoscop[ií]a|broncoscop[ií]a|videoesofagogastr[oó]gic[ao]|videoesofagogastroduodenoscop[ií]a|video\s*esofagogastr[oó]gic[ao]|video\s*colonoscop[ií]a)\b/i.test(trozoValidacion);
+    // Detectar si es una endoscopía o procedimiento endoscópico (soporte para terminaciones a/o y corrección de typos)
+    // Regex ajustado para: Videoesofagogastrico (sin 'o' intermedia)
+    const esEndoscopia = /\b(endoscop[ií]a|gastroscop[ií]a|colonoscop[ií]a|broncoscop[ií]a|videoesofagogastr[íi]c[ao]|videoesofagogastr[oó]gic[ao]|videoesofagogastroduodenoscop[ií]a|video\s*esofagogastr[íi]c[ao]|video\s*esofagogastr[oó]gic[ao]|video\s*colonoscop[ií]a)\b/i.test(trozoValidacion);
 
     // Buscar miembros del equipo quirúrgico en el bloque de validación
     // Regex relajado para aceptar asteriscos, puntos, etc. (ej: ****SIN ANESTESIA****)
@@ -2029,7 +2030,15 @@ function analizarFojaQuirurgica(texto: string): ResultadosFoja {
             const fecha1 = `${partes1[0].padStart(2, '0')}/${partes1[1].padStart(2, '0')}/${partes1[2]}`;
             const fecha2 = `${partes2[0].padStart(2, '0')}/${partes2[1].padStart(2, '0')}/${partes2[2]}`;
             if (fecha1 === fecha2) {
-              // Si tienen la misma fecha, verificar si tienen el mismo anestesista
+              // Si tienen la misma fecha, verificar hora de inicio para distinguir procedimientos
+              // Solamente si ambas tienen hora y es distinta, las asumimos diferentes.
+              // Si no tienen hora, nos fijamos en el equipo para no duplicar por error de OCR repetido.
+
+              if (foja.hora_inicio && fojaExistente.hora_inicio && foja.hora_inicio !== fojaExistente.hora_inicio) {
+                return false; // Son diferentes procedimientos el mismo día
+              }
+
+              // Si tienen la misma hora o no tienen hora, seguimos verificando por equipo
               const anestesista1 = foja.equipo_quirurgico.find(e => e.rol === 'anestesista')?.nombre;
               const anestesista2 = fojaExistente.equipo_quirurgico.find(e => e.rol === 'anestesista')?.nombre;
               if (anestesista1 && anestesista2 && anestesista1 === anestesista2) {
