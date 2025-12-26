@@ -31,11 +31,10 @@ function App() {
             <nav className="hidden md:flex gap-2">
               <button
                 onClick={() => setCurrentPage('documentacion')}
-                className={`px-6 py-2 rounded-lg font-semibold transition-all ${
-                  currentPage === 'documentacion'
-                    ? 'bg-green-600 text-white shadow-lg'
-                    : 'bg-white text-gray-700 hover:bg-green-50 border border-gray-200'
-                }`}
+                className={`px-6 py-2 rounded-lg font-semibold transition-all ${currentPage === 'documentacion'
+                  ? 'bg-green-600 text-white shadow-lg'
+                  : 'bg-white text-gray-700 hover:bg-green-50 border border-gray-200'
+                  }`}
               >
                 <span className="flex items-center gap-2">
                   <FileText className="w-4 h-4" />
@@ -44,11 +43,10 @@ function App() {
               </button>
               <button
                 onClick={() => setCurrentPage('auditar')}
-                className={`px-6 py-2 rounded-lg font-semibold transition-all ${
-                  currentPage === 'auditar'
-                    ? 'bg-green-600 text-white shadow-lg'
-                    : 'bg-white text-gray-700 hover:bg-green-50 border border-gray-200'
-                }`}
+                className={`px-6 py-2 rounded-lg font-semibold transition-all ${currentPage === 'auditar'
+                  ? 'bg-green-600 text-white shadow-lg'
+                  : 'bg-white text-gray-700 hover:bg-green-50 border border-gray-200'
+                  }`}
               >
                 <span className="flex items-center gap-2">
                   <Stethoscope className="w-4 h-4" />
@@ -57,11 +55,10 @@ function App() {
               </button>
               <button
                 onClick={() => setCurrentPage('historial')}
-                className={`px-6 py-2 rounded-lg font-semibold transition-all ${
-                  currentPage === 'historial'
-                    ? 'bg-green-600 text-white shadow-lg'
-                    : 'bg-white text-gray-700 hover:bg-green-50 border border-gray-200'
-                }`}
+                className={`px-6 py-2 rounded-lg font-semibold transition-all ${currentPage === 'historial'
+                  ? 'bg-green-600 text-white shadow-lg'
+                  : 'bg-white text-gray-700 hover:bg-green-50 border border-gray-200'
+                  }`}
               >
                 <span className="flex items-center gap-2">
                   <History className="w-4 h-4" />
@@ -70,11 +67,10 @@ function App() {
               </button>
               <button
                 onClick={() => setCurrentPage('actualizaciones')}
-                className={`px-6 py-2 rounded-lg font-semibold transition-all ${
-                  currentPage === 'actualizaciones'
-                    ? 'bg-green-600 text-white shadow-lg'
-                    : 'bg-white text-gray-700 hover:bg-green-50 border border-gray-200'
-                }`}
+                className={`px-6 py-2 rounded-lg font-semibold transition-all ${currentPage === 'actualizaciones'
+                  ? 'bg-green-600 text-white shadow-lg'
+                  : 'bg-white text-gray-700 hover:bg-green-50 border border-gray-200'
+                  }`}
               >
                 <span className="flex items-center gap-2">
                   <FileText className="w-4 h-4" />
@@ -102,11 +98,10 @@ function App() {
                   setCurrentPage('documentacion');
                   setMobileMenuOpen(false);
                 }}
-                className={`px-6 py-3 rounded-lg font-semibold transition-all text-left ${
-                  currentPage === 'documentacion'
-                    ? 'bg-green-600 text-white'
-                    : 'bg-white text-gray-700 border border-gray-200'
-                }`}
+                className={`px-6 py-3 rounded-lg font-semibold transition-all text-left ${currentPage === 'documentacion'
+                  ? 'bg-green-600 text-white'
+                  : 'bg-white text-gray-700 border border-gray-200'
+                  }`}
               >
                 <span className="flex items-center gap-2">
                   <FileText className="w-4 h-4" />
@@ -118,11 +113,10 @@ function App() {
                   setCurrentPage('auditar');
                   setMobileMenuOpen(false);
                 }}
-                className={`px-6 py-3 rounded-lg font-semibold transition-all text-left ${
-                  currentPage === 'auditar'
-                    ? 'bg-green-600 text-white'
-                    : 'bg-white text-gray-700 border border-gray-200'
-                }`}
+                className={`px-6 py-3 rounded-lg font-semibold transition-all text-left ${currentPage === 'auditar'
+                  ? 'bg-green-600 text-white'
+                  : 'bg-white text-gray-700 border border-gray-200'
+                  }`}
               >
                 <span className="flex items-center gap-2">
                   <Stethoscope className="w-4 h-4" />
@@ -134,11 +128,10 @@ function App() {
                   setCurrentPage('historial');
                   setMobileMenuOpen(false);
                 }}
-                className={`px-6 py-3 rounded-lg font-semibold transition-all text-left ${
-                  currentPage === 'historial'
-                    ? 'bg-green-600 text-white'
-                    : 'bg-white text-gray-700 border border-gray-200'
-                }`}
+                className={`px-6 py-3 rounded-lg font-semibold transition-all text-left ${currentPage === 'historial'
+                  ? 'bg-green-600 text-white'
+                  : 'bg-white text-gray-700 border border-gray-200'
+                  }`}
               >
                 <span className="flex items-center gap-2">
                   <History className="w-4 h-4" />
@@ -150,11 +143,10 @@ function App() {
                   setCurrentPage('actualizaciones');
                   setMobileMenuOpen(false);
                 }}
-                className={`px-6 py-3 rounded-lg font-semibold transition-all text-left ${
-                  currentPage === 'actualizaciones'
-                    ? 'bg-green-600 text-white'
-                    : 'bg-white text-gray-700 border border-gray-200'
-                }`}
+                className={`px-6 py-3 rounded-lg font-semibold transition-all text-left ${currentPage === 'actualizaciones'
+                  ? 'bg-green-600 text-white'
+                  : 'bg-white text-gray-700 border border-gray-200'
+                  }`}
               >
                 <span className="flex items-center gap-2">
                   <FileText className="w-4 h-4" />
@@ -179,7 +171,7 @@ function App() {
             <div>
               <div className="flex items-center gap-3 mb-4">
                 <img
-                  src="/logo-header.png"
+                  src="/logogrow.png"
                   alt="Grow Labs Logo"
                   className="h-12 w-12 object-contain bg-white rounded-full p-1"
                 />
@@ -214,7 +206,7 @@ function App() {
               </div>
               <div className="flex gap-4 mt-3">
                 <a
-                  href="https://www.growsanjuan.com"
+                  href="https://growlabs.click/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all shadow-md hover:shadow-lg"
