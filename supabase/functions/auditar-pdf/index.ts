@@ -1763,35 +1763,38 @@ function analizarFojaQuirurgica(texto: string): ResultadosFoja {
     const esEndoscopia = /\b(endoscop[ií]a|gastroscop[ií]a|colonoscop[ií]a|broncoscop[ií]a|videoesofagogastr[oó]gica|videoesofagogastroduodenoscop[ií]a|video\s*esofagogastr[oó]gica)\b/i.test(trozoValidacion);
 
     // Buscar miembros del equipo quirúrgico en el bloque de validación
-    const tieneAnestesistaCerca = /anestesista[:\s]*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ,\s]{2,40})/i.test(trozoValidacion);
-    const tieneEndoscopistaCerca = /endoscopista[:\s]*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ,\s]{2,40})/i.test(trozoValidacion);
-    const tieneCirujanoCerca = /cirujano[:\s]*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ,\s]{2,40})/i.test(trozoValidacion);
+    // Regex relajado para aceptar asteriscos, puntos, etc. (ej: ****SIN ANESTESIA****)
+    const regexNombre = "[A-ZÁÉÍÓÚÑ\\*][A-ZÁÉÍÓÚÑ,\\s\\*\\.\\-\\(\\)]{2,60}";
+
+    // Check específico para sin anestesia
+    const sinAnestesia = /\*+SIN ANESTESIA\*+/i.test(trozoValidacion) || /SIN\s+ANESTESIA/i.test(trozoValidacion);
+
+    const tieneAnestesistaCerca = new RegExp(`anestesista[:\\s]*(${regexNombre})`, 'i').test(trozoValidacion) || sinAnestesia;
+    const tieneEndoscopistaCerca = new RegExp(`endoscopista[:\\s]*(${regexNombre})`, 'i').test(trozoValidacion);
+    const tieneCirujanoCerca = new RegExp(`cirujano[:\\s]*(${regexNombre})`, 'i').test(trozoValidacion);
 
     let esValida = false;
     let rangoBusqueda = 5000; // Rango por defecto para cirugías normales
 
-    // Validación flexible: aceptar si tiene Anestesista (para procedimientos menores)
-    // O si tiene Cirujano + Anestesista (para cirugías mayores)
+    // Validación flexible:
     if (tieneAnestesistaCerca) {
-      // Si tiene Anestesista, es válida (cubre endoscopías y procedimientos menores)
       esValida = true;
       if (esEndoscopia) {
-        rangoBusqueda = 3000; // Reducir rango para endoscopías (son más cortas)
+        rangoBusqueda = 3000;
       } else if (!tieneCirujanoCerca) {
-        // Si no es endoscopía pero tampoco tiene Cirujano, probablemente es procedimiento menor
-        rangoBusqueda = 3000; // Usar rango más corto
-      }
-    } else if (tieneCirujanoCerca && tieneEndoscopistaCerca) {
-      // Caso especial: Cirujano + Endoscopista (sin Anestesista explícito)
-      esValida = true;
-    } else if (tieneCirujanoCerca) {
-      // Si solo tiene Cirujano pero no Anestesista, podría ser una referencia
-      // Pero si es endoscopía, aceptarla
-      if (esEndoscopia) {
-        esValida = true;
         rangoBusqueda = 3000;
       }
-      // Para cirugías normales sin Anestesista, no es válida (solo referencia)
+    } else if (tieneCirujanoCerca) {
+      // Si tiene Cirujano, lo consideramos válido (incluso sin anestesista explícito)
+      // Esto cubre casos como "SIN ANESTESIA" que no haya macheado arriba, o procedimientos locales
+      esValida = true;
+      if (esEndoscopia) {
+        rangoBusqueda = 3000;
+      }
+    } else if (tieneEndoscopistaCerca) {
+      // Si solo tiene endoscopista, también es válido para ese tipo
+      esValida = true;
+      rangoBusqueda = 3000;
     }
 
     // Si no es válida, ignorar esta ocurrencia
@@ -1829,14 +1832,17 @@ function analizarFojaQuirurgica(texto: string): ResultadosFoja {
     }
 
     // Buscar equipo quirúrgico
+    // Regex relajado para nombres (reutilizando lógica similar a la validación)
+    const regexNombreCaptura = "([A-ZÁÉÍÓÚÑ\\*][A-ZÁÉÍÓÚÑ,\\s\\*\\.\\-\\(\\)]{2,60})";
+
     const patronesEquipo = [
-      { rol: 'cirujano', patrón: /cirujano[:\s]*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ,\s]{2,40})/i },
-      { rol: 'anestesista', patrón: /anestesista[:\s]*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ,\s]{2,40})/i },
-      { rol: 'endoscopista', patrón: /endoscopista[:\s]*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ,\s]{2,40})/i },
-      { rol: 'instrumentador', patrón: /instrumentador\/?a?[:\s]*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ,\s]{2,40})/i },
-      { rol: 'primer_ayudante', patrón: /primer\s+ayudante[:\s]*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ,\s]{2,40})/i },
-      { rol: 'ayudante_residencia', patrón: /ayudante\s+residencia[:\s]*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ,\s]{2,40})/i },
-      { rol: 'ayudante', patrón: /ayudante[:\s]*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ,\s]{2,40})/i },
+      { rol: 'cirujano', patrón: new RegExp(`cirujano[:\\s]*${regexNombreCaptura}`, 'i') },
+      { rol: 'anestesista', patrón: new RegExp(`anestesista[:\\s]*${regexNombreCaptura}`, 'i') },
+      { rol: 'endoscopista', patrón: new RegExp(`endoscopista[:\\s]*${regexNombreCaptura}`, 'i') },
+      { rol: 'instrumentador', patrón: new RegExp(`instrumentador\\/?a?[:\\s]*${regexNombreCaptura}`, 'i') },
+      { rol: 'primer_ayudante', patrón: new RegExp(`primer\\s+ayudante[:\\s]*${regexNombreCaptura}`, 'i') },
+      { rol: 'ayudante_residencia', patrón: new RegExp(`ayudante\\s+residencia[:\\s]*${regexNombreCaptura}`, 'i') },
+      { rol: 'ayudante', patrón: new RegExp(`ayudante[:\\s]*${regexNombreCaptura}`, 'i') },
     ];
     const vistos = new Set<string>();
 
