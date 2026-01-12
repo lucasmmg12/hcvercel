@@ -389,7 +389,7 @@ export function InformeAuditoria({ resultado, auditoriaId }: { resultado: Result
                   </span>
                 </div>
                 <p className="text-sm text-gray-700 mb-2">{com.motivo}</p>
-                <div className="bg-white p-3 rounded text-sm mb-3">{com.mensaje}</div>
+                <div className="bg-white p-3 rounded text-sm mb-3 text-gray-800 border border-gray-200">{com.mensaje}</div>
                 <button
                   onClick={() => abrirModalEnvio(idx)}
                   disabled={enviando}
