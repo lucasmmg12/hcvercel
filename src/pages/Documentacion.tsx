@@ -10,7 +10,7 @@ export function Documentacion() {
         <h1 className="text-4xl font-bold text-white drop-shadow-sm">Sistema de Auditoría Médica</h1>
         <p className="text-xl text-green-700 font-semibold">Sanatorio Argentino - San Juan</p>
         <p className="text-lg text-white max-w-3xl mx-auto font-medium">
-          Automatización inteligente con IA para la detección de errores, clasificación de complejidad y prevención de débitos.
+          Automatización inteligente mediante algoritmos avanzados para la detección de errores y clasificación clínica.
         </p>
       </div>
 
@@ -21,10 +21,9 @@ export function Documentacion() {
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Descripción General Actualizada</h2>
             <p className="text-gray-800 leading-relaxed">
               El sistema ha evolucionado de un simple auditor de completitud a una herramienta diagnóstica integral.
-              No solo verifica la presencia de documentos (evoluciones, fojas, epicrisis), sino que ahora utiliza inteligencia
-              artificial para <strong>leer y entender el contenido clínico</strong>. Esto permite clasificar internaciones
-              automáticamente (Terapia vs Sala General), detectar prácticas que requieren facturación especial (Catéteres, Punciones)
-              y rastrear interconsultas y estudios específicos.
+              No solo verifica la presencia de documentos, sino que ahora implementa un potente <strong>motor de análisis semántico desarrollado a medida</strong>.
+              Esto permite interpretar la narrativa médica mediante lógica computacional avanzada para clasificar internaciones,
+              detectar prácticas complejas y asegurar la trazabilidad clínica con máxima precisión.
             </p>
           </div>
         </div>
@@ -168,10 +167,10 @@ export function Documentacion() {
               <div className="flex items-start gap-4 p-4 bg-green-50 rounded-lg">
                 <div className="flex-shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold">2</div>
                 <div>
-                  <h4 className="font-semibold text-gray-900">Análisis Inteligente (IA)</h4>
+                  <h4 className="font-semibold text-gray-900">Procesamiento Lógico Avanzado</h4>
                   <p className="text-gray-600">
-                    El sistema "lee" las evoluciones para entender contexto clínico, no solo busca palabras clave.
-                    Determina si el paciente está estable, grave, en ARM, etc.
+                    El sistema ejecuta algoritmos de análisis textual estructurado para extraer indicadores clínicos.
+                    Evalúa condiciones complejas (estabilidad, ARM, inotrópicos) mediante reglas de negocio predefinidas.
                   </p>
                 </div>
               </div>
