@@ -13,19 +13,42 @@ export interface DashboardStats {
 }
 
 export async function obtenerDatosDashboard(): Promise<DashboardStats> {
-    const { data: auditorias } = await supabase.from('auditorias').select('*');
-    const { data: erroresMedicos } = await supabase.from('errores_medicos').select('*');
+    console.log('📊 Dashboard: Iniciando carga de datos...');
+
+    const { data: auditorias, error: errorAuditorias } = await supabase.from('auditorias').select('*');
+    const { data: erroresMedicos, error: errorErrores } = await supabase.from('errores_medicos').select('*');
+
+    if (errorAuditorias) console.error('❌ Dashboard: Error en auditorias:', errorAuditorias);
+    if (errorErrores) console.error('❌ Dashboard: Error en errores_medicos:', errorErrores);
 
     const auditoriasSeguras = auditorias || [];
     const erroresSeguros = erroresMedicos || [];
 
+    console.log(`📈 Dashboard: ${auditoriasSeguras.length} auditorías encontradas`);
+    console.log(`📉 Dashboard: ${erroresSeguros.length} errores médicos encontrados`);
+
     // A. Análisis de Errores por Etapa
     const etapas = [
-        { etapa: 'Admisión', cantidad: auditoriasSeguras.reduce((s, a) => s + (a.errores_admision || 0), 0) },
-        { etapa: 'Evoluciones', cantidad: auditoriasSeguras.reduce((s, a) => s + (a.errores_evoluciones || 0), 0) },
-        { etapa: 'Foja Quir.', cantidad: auditoriasSeguras.reduce((s, a) => s + (a.errores_foja_quirurgica || 0), 0) },
-        { etapa: 'Epicrisis', cantidad: auditoriasSeguras.reduce((s, a) => s + (a.errores_epicrisis || 0), 0) },
-        { etapa: 'Alta Médica', cantidad: auditoriasSeguras.reduce((s, a) => s + (a.errores_alta_medica || a.errores_alta || 0), 0) },
+        {
+            etapa: 'Admisión',
+            cantidad: auditoriasSeguras.reduce((s, a) => s + (Number(a.errores_admision) || 0), 0)
+        },
+        {
+            etapa: 'Evoluciones',
+            cantidad: auditoriasSeguras.reduce((s, a) => s + (Number(a.errores_evoluciones) || 0), 0)
+        },
+        {
+            etapa: 'Foja Quir.',
+            cantidad: auditoriasSeguras.reduce((s, a) => s + (Number(a.errores_foja_quirurgica) || 0), 0)
+        },
+        {
+            etapa: 'Epicrisis',
+            cantidad: auditoriasSeguras.reduce((s, a) => s + (Number(a.errores_epicrisis) || 0), 0)
+        },
+        {
+            etapa: 'Alta Médica',
+            cantidad: auditoriasSeguras.reduce((s, a) => s + (Number(a.errores_alta_medica || a.errores_alta || 0) || 0), 0)
+        },
     ];
 
     const totalAuditorias = auditoriasSeguras.length;
@@ -33,15 +56,15 @@ export async function obtenerDatosDashboard(): Promise<DashboardStats> {
     // A. Severidad
     const severidadMap: Record<string, number> = {};
     erroresSeguros.forEach(e => {
-        const sev = e.severidad || 'No definida';
+        const sev = (e.severidad || 'No definida').toUpperCase();
         severidadMap[sev] = (severidadMap[sev] || 0) + 1;
     });
-    const erroresPorSeveridad = Object.entries(severidadMap).map(([severidad, cantidad]) => ({ severidad, cantidad }));
+    const errores_por_severidad = Object.entries(severidadMap).map(([severidad, cantidad]) => ({ severidad, cantidad }));
 
     // A. Top Tipos de Errores
     const tiposMap: Record<string, number> = {};
     erroresSeguros.forEach(e => {
-        const tipo = e.tipo_error || 'Otro';
+        const tipo = (e.tipo_error || 'Otro');
         tiposMap[tipo] = (tiposMap[tipo] || 0) + 1;
     });
     const topErrores = Object.entries(tiposMap)
@@ -71,17 +94,25 @@ export async function obtenerDatosDashboard(): Promise<DashboardStats> {
     // C. Auditorias por Fecha (últimos 30 días)
     const fechasMap: Record<string, number> = {};
     auditoriasSeguras.forEach(a => {
-        const fecha = new Date(a.created_at).toLocaleDateString('es-AR');
-        fechasMap[fecha] = (fechasMap[fecha] || 0) + 1;
+        const dateVal = a.created_at || a.fecha_auditoria;
+        if (!dateVal) return;
+        try {
+            const dateObj = new Date(dateVal);
+            if (isNaN(dateObj.getTime())) return;
+            const fecha = dateObj.toLocaleDateString('es-AR');
+            fechasMap[fecha] = (fechasMap[fecha] || 0) + 1;
+        } catch (e) { /* ignore */ }
     });
+
     const auditoriasPorFecha = Object.entries(fechasMap)
         .map(([fecha, cantidad]) => ({ fecha, cantidad }))
         .sort((a, b) => {
             const [da, ma, ya] = a.fecha.split('/');
             const [db, mb, yb] = b.fecha.split('/');
-            return new Date(`${ya}-${ma}-${da}`).getTime() - new Date(`${yb}-${mb}-${db}`).getTime();
-        })
-        .slice(-30);
+            const dateA = new Date(parseInt(ya), parseInt(ma) - 1, parseInt(da)).getTime();
+            const dateB = new Date(parseInt(yb), parseInt(mb) - 1, parseInt(db)).getTime();
+            return dateA - dateB;
+        });
 
     // C. Distribución Obra Social
     const osMap: Record<string, number> = {};
@@ -92,12 +123,13 @@ export async function obtenerDatosDashboard(): Promise<DashboardStats> {
     const distribucionObraSocial = Object.entries(osMap)
         .map(([nombre, cantidad]) => ({ nombre, cantidad }))
         .sort((a, b) => b.cantidad - a.cantidad)
-        .slice(0, 8);
+        .slice(0, 15);
 
     // C. Uso Bisturí Armónico
     const bisturiMap: Record<string, number> = { 'SI': 0, 'NO': 0, 'No determinado': 0 };
     auditoriasSeguras.forEach(a => {
-        const val = a.bisturi_armonico || 'No determinado';
+        let val = String(a.bisturi_armonico || 'No determinado').toUpperCase();
+        if (val === 'SÍ') val = 'SI';
         if (bisturiMap.hasOwnProperty(val)) {
             bisturiMap[val]++;
         } else {
@@ -106,9 +138,11 @@ export async function obtenerDatosDashboard(): Promise<DashboardStats> {
     });
     const usoBisturi = Object.entries(bisturiMap).map(([tipo, cantidad]) => ({ tipo, cantidad }));
 
+    console.log('📊 Dashboard: Proceso de datos completado');
+
     return {
         erroresPorEtapa: etapas,
-        erroresPorSeveridad,
+        erroresPorSeveridad: errores_por_severidad,
         topErrores,
         rankingMedicos,
         erroresPorRol,

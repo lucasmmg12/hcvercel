@@ -94,7 +94,11 @@ export function Dashboard() {
             {/* Fila 1: Análisis de Errores */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Errores por Etapa */}
-                <ChartContainer title="Distribución de Errores por Etapa" icon={<FileBarChart2 className="text-green-400" />}>
+                <ChartContainer
+                    title="Distribución de Errores por Etapa"
+                    icon={<FileBarChart2 className="text-green-400" />}
+                    isEmpty={stats.erroresPorEtapa.every(e => e.cantidad === 0)}
+                >
                     <ResponsiveContainer width="100%" height={300}>
                         <BarChart data={stats.erroresPorEtapa}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
@@ -110,7 +114,11 @@ export function Dashboard() {
                 </ChartContainer>
 
                 {/* Severidad */}
-                <ChartContainer title="Severidad de los Errores" icon={<AlertTriangle className="text-red-400" />}>
+                <ChartContainer
+                    title="Severidad de los Errores"
+                    icon={<AlertTriangle className="text-red-400" />}
+                    isEmpty={stats.erroresPorSeveridad.length === 0}
+                >
                     <ResponsiveContainer width="100%" height={300}>
                         <PieChart>
                             <Pie
@@ -139,23 +147,45 @@ export function Dashboard() {
             {/* Fila 2: Médicos y Roles */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Ranking Médicos */}
-                <ChartContainer title="Top 10 Médicos con más Observaciones" icon={<Users className="text-blue-400" />}>
-                    <ResponsiveContainer width="100%" height={300}>
-                        <BarChart data={stats.rankingMedicos} layout="vertical">
+                <ChartContainer
+                    title="Top 10 Médicos con más Observaciones"
+                    icon={<Users className="text-blue-400" />}
+                    isEmpty={stats.rankingMedicos.length === 0}
+                >
+                    <ResponsiveContainer width="100%" height={450}>
+                        <BarChart
+                            data={stats.rankingMedicos}
+                            layout="vertical"
+                            margin={{ top: 5, right: 30, left: 40, bottom: 5 }}
+                        >
                             <CartesianGrid strokeDasharray="3 3" stroke="#222" horizontal={false} />
                             <XAxis type="number" stroke="#999" fontSize={12} hide />
-                            <YAxis dataKey="nombre" type="category" stroke="#999" fontSize={11} width={120} tickLine={false} axisLine={false} />
+                            <YAxis
+                                dataKey="nombre"
+                                type="category"
+                                stroke="#ccc"
+                                fontSize={10}
+                                width={150}
+                                tickLine={false}
+                                axisLine={false}
+                                tick={{ fill: '#aaa' }}
+                            />
                             <Tooltip
                                 contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333', borderRadius: '8px' }}
                                 itemStyle={{ color: '#3b82f6' }}
+                                cursor={{ fill: 'rgba(255,255,255,0.05)' }}
                             />
-                            <Bar dataKey="errores" fill="#3b82f6" radius={[0, 4, 4, 0]} />
+                            <Bar dataKey="errores" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={20} />
                         </BarChart>
                     </ResponsiveContainer>
                 </ChartContainer>
 
                 {/* Errores por Rol */}
-                <ChartContainer title="Distribución de Errores por Rol Médico" icon={<Activity className="text-purple-400" />}>
+                <ChartContainer
+                    title="Distribución de Errores por Rol Médico"
+                    icon={<Activity className="text-purple-400" />}
+                    isEmpty={stats.erroresPorRol.length === 0}
+                >
                     <ResponsiveContainer width="100%" height={300}>
                         <BarChart data={stats.erroresPorRol}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
@@ -175,7 +205,11 @@ export function Dashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Volumen en el tiempo */}
                 <div className="lg:col-span-2">
-                    <ChartContainer title="Volumen de Auditorías (Últimos 30 días)" icon={<TrendingUp className="text-green-400" />}>
+                    <ChartContainer
+                        title="Volumen de Auditorías (Últimos 30 días)"
+                        icon={<TrendingUp className="text-green-400" />}
+                        isEmpty={stats.auditoriasPorFecha.length === 0}
+                    >
                         <ResponsiveContainer width="100%" height={300}>
                             <AreaChart data={stats.auditoriasPorFecha}>
                                 <defs>
@@ -198,7 +232,11 @@ export function Dashboard() {
                 </div>
 
                 {/* Bisturí Armónico */}
-                <ChartContainer title="Uso de Bisturí Armónico" icon={<Scissors className="text-orange-400" />}>
+                <ChartContainer
+                    title="Uso de Bisturí Armónico"
+                    icon={<Scissors className="text-orange-400" />}
+                    isEmpty={stats.usoBisturi.every(e => e.cantidad === 0)}
+                >
                     <ResponsiveContainer width="100%" height={300}>
                         <PieChart>
                             <Pie
@@ -225,12 +263,34 @@ export function Dashboard() {
             </div>
 
             {/* Fila 4: Obra Social */}
-            <ChartContainer title="Distribución por Obra Social" icon={<ShieldCheck className="text-cyan-400" />}>
+            <ChartContainer
+                title="Distribución por Obra Social"
+                icon={<ShieldCheck className="text-cyan-400" />}
+                isEmpty={stats.distribucionObraSocial.length === 0}
+            >
                 <ResponsiveContainer width="100%" height={350}>
-                    <BarChart data={stats.distribucionObraSocial}>
+                    <BarChart data={stats.distribucionObraSocial} margin={{ bottom: 60 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
-                        <XAxis dataKey="nombre" stroke="#999" fontSize={11} interval={0} tickLine={false} axisLine={false} />
-                        <YAxis stroke="#999" fontSize={12} tickLine={false} axisLine={false} />
+                        <XAxis
+                            dataKey="nombre"
+                            stroke="#999"
+                            fontSize={10}
+                            interval={0}
+                            tickLine={false}
+                            axisLine={false}
+                            tick={(props) => {
+                                const { x, y, payload } = props;
+                                const label = payload.value.length > 20 ? payload.value.substring(0, 17) + '...' : payload.value;
+                                return (
+                                    <g transform={`translate(${x},${y})`}>
+                                        <text x={0} y={0} dy={16} textAnchor="end" fill="#999" transform="rotate(-35)" fontSize={10}>
+                                            {label}
+                                        </text>
+                                    </g>
+                                );
+                            }}
+                        />
+                        <YAxis stroke="#999" fontSize={12} tickLine={false} axisLine={false} width={30} />
                         <Tooltip
                             contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333', borderRadius: '8px' }}
                             itemStyle={{ color: '#06b6d4' }}
@@ -278,15 +338,22 @@ function KpiCard({ icon, title, value, trend, color }: {
     );
 }
 
-function ChartContainer({ children, title, icon }: { children: React.ReactNode, title: string, icon: React.ReactNode }) {
+function ChartContainer({ children, title, icon, isEmpty }: { children: React.ReactNode, title: string, icon: React.ReactNode, isEmpty?: boolean }) {
     return (
         <div className="glass-card rounded-2xl border border-white/10 p-6 flex flex-col h-full bg-[#0a0a0a]/40 backdrop-blur-xl">
             <div className="flex items-center gap-2 mb-6 border-b border-white/5 pb-4">
                 {icon}
                 <h3 className="text-lg font-semibold text-white/90">{title}</h3>
             </div>
-            <div className="flex-1 min-h-[300px]">
-                {children}
+            <div className="flex-1 min-h-[300px] flex flex-col">
+                {isEmpty ? (
+                    <div className="flex-1 flex flex-col items-center justify-center text-gray-500 space-y-2">
+                        <Activity className="w-8 h-8 opacity-20" />
+                        <p className="text-sm font-light italic">No hay datos suficientes para mostrar este análisis</p>
+                    </div>
+                ) : (
+                    children
+                )}
             </div>
         </div>
     );
