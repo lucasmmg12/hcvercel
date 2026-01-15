@@ -1,14 +1,18 @@
 import { useState } from 'react';
-import { FileText, Stethoscope, Menu, X, Instagram, Globe, MessageCircle, Linkedin, History } from 'lucide-react';
+import {
+  FileText, Stethoscope, Menu, X, Instagram, Globe,
+  MessageCircle, Linkedin, History, LayoutDashboard
+} from 'lucide-react';
 import { Documentacion } from './pages/Documentacion';
 import { AuditarPDF } from './pages/AuditarPDF';
 import { Historial } from './pages/Historial';
 import { UpdatesHub } from './pages/UpdatesHub';
+import { Dashboard } from './pages/Dashboard';
 
-type Page = 'documentacion' | 'auditar' | 'historial' | 'actualizaciones';
+type Page = 'dashboard' | 'documentacion' | 'auditar' | 'historial' | 'actualizaciones';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<Page>('documentacion');
+  const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
@@ -36,6 +40,18 @@ function App() {
             </div>
 
             <nav className="hidden md:flex gap-2">
+              <button
+                onClick={() => setCurrentPage('dashboard')}
+                className={`px-6 py-2 rounded-lg font-semibold transition-all duration-300 ${currentPage === 'dashboard'
+                  ? 'bg-green-600 text-white shadow-[0_0_15px_rgba(34,197,94,0.4)]'
+                  : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  }`}
+              >
+                <span className="flex items-center gap-2">
+                  <LayoutDashboard className="w-4 h-4" />
+                  Estadísticas
+                </span>
+              </button>
               <button
                 onClick={() => setCurrentPage('documentacion')}
                 className={`px-6 py-2 rounded-lg font-semibold transition-all duration-300 ${currentPage === 'documentacion'
@@ -102,6 +118,21 @@ function App() {
             <nav className="md:hidden mt-4 flex flex-col gap-2 pb-2 border-t border-white/10 pt-4">
               <button
                 onClick={() => {
+                  setCurrentPage('dashboard');
+                  setMobileMenuOpen(false);
+                }}
+                className={`px-6 py-3 rounded-lg font-semibold transition-all text-left ${currentPage === 'dashboard'
+                  ? 'bg-green-600 text-white'
+                  : 'text-gray-300 hover:bg-white/5'
+                  }`}
+              >
+                <span className="flex items-center gap-2">
+                  <LayoutDashboard className="w-4 h-4" />
+                  Estadísticas
+                </span>
+              </button>
+              <button
+                onClick={() => {
                   setCurrentPage('documentacion');
                   setMobileMenuOpen(false);
                 }}
@@ -166,6 +197,7 @@ function App() {
       </header>
 
       <main className="pb-12 relative z-10">
+        {currentPage === 'dashboard' && <Dashboard />}
         {currentPage === 'documentacion' && <Documentacion />}
         {currentPage === 'auditar' && <AuditarPDF />}
         {currentPage === 'historial' && <Historial />}
