@@ -2883,7 +2883,16 @@ Deno.serve(async (req: Request) => {
 
     if (error) {
       console.error("Error guardando en BD:", error);
+      throw new Error(`Error al guardar en la base de datos: ${error.message}`);
     }
+
+    if (!data || data.length === 0) {
+      console.error("No se devolvieron datos tras el insert");
+      throw new Error("No se pudo crear el registro de auditoría");
+    }
+
+    const auditoriaId = data[0].id;
+
 
     // ========= NUEVO: Guardar médicos y errores por médico (con logs) =========
     console.log("BUILD auditar-pdf 2025-10-30 19:35");
@@ -2902,7 +2911,7 @@ Deno.serve(async (req: Request) => {
         console.log("DEBUG: Hay equipo quirúrgico, procesando...");
 
         const medicosToInsert = foja.equipo_quirurgico.map((m) => ({
-          auditoria_id: data?.[0]?.id,
+          auditoria_id: auditoriaId,
           nombre_completo: m.nombre,
           rol: m.rol,
           fecha_cirugia: foja.fecha_cirugia || null,
@@ -2955,7 +2964,7 @@ Deno.serve(async (req: Request) => {
       const medicoId = medicosIds[key];
       if (medicoId) {
         erroresMedicosToInsert.push({
-          auditoria_id: data?.[0]?.id,
+          auditoria_id: auditoriaId,
           medico_id: medicoId,
           nombre_medico: nombre,
           rol_medico: rol,
@@ -3047,7 +3056,7 @@ Deno.serve(async (req: Request) => {
     // ========= FIN NUEVO =========
 
     return new Response(
-      JSON.stringify({ success: true, resultado, auditoriaId: data?.[0]?.id }),
+      JSON.stringify({ success: true, resultado, auditoriaId }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: any) {
