@@ -9,6 +9,7 @@ export interface DashboardStats {
     auditoriasPorFecha: { fecha: string; cantidad: number }[];
     distribucionObraSocial: { nombre: string; cantidad: number }[];
     usoBisturi: { tipo: string; cantidad: number }[];
+    totalAuditorias: number;
 }
 
 export async function obtenerDatosDashboard(): Promise<DashboardStats> {
@@ -24,8 +25,10 @@ export async function obtenerDatosDashboard(): Promise<DashboardStats> {
         { etapa: 'Evoluciones', cantidad: auditoriasSeguras.reduce((s, a) => s + (a.errores_evoluciones || 0), 0) },
         { etapa: 'Foja Quir.', cantidad: auditoriasSeguras.reduce((s, a) => s + (a.errores_foja_quirurgica || 0), 0) },
         { etapa: 'Epicrisis', cantidad: auditoriasSeguras.reduce((s, a) => s + (a.errores_epicrisis || 0), 0) },
-        { etapa: 'Alta Médica', cantidad: auditoriasSeguras.reduce((s, a) => s + (a.errores_alta_medica || 0), 0) },
+        { etapa: 'Alta Médica', cantidad: auditoriasSeguras.reduce((s, a) => s + (a.errores_alta_medica || a.errores_alta || 0), 0) },
     ];
+
+    const totalAuditorias = auditoriasSeguras.length;
 
     // A. Severidad
     const severidadMap: Record<string, number> = {};
@@ -111,6 +114,7 @@ export async function obtenerDatosDashboard(): Promise<DashboardStats> {
         erroresPorRol,
         auditoriasPorFecha,
         distribucionObraSocial,
-        usoBisturi
+        usoBisturi,
+        totalAuditorias
     };
 }

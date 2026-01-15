@@ -64,7 +64,7 @@ export function Dashboard() {
                 <KpiCard
                     icon={<ShieldCheck className="w-8 h-8 text-green-500" />}
                     title="Total Auditorías"
-                    value={stats.auditoriasPorFecha.reduce((s, d) => s + d.cantidad, 0).toString()}
+                    value={stats.totalAuditorias.toString()}
                     trend="+12% vs mes anterior"
                     color="green"
                 />
