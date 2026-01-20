@@ -57,7 +57,7 @@ function construirMensajeWhatsApp(
     mensaje += `\n`;
   }
 
-  mensaje += `🩺 *Acción:* Completar correcciones antes del envío a OSDE para evitar débitos.\n\n`;
+  mensaje += `🩺 *Acción:* Completar correcciones antes del envío a la Obra Social para evitar débitos.\n\n`;
   mensaje += `🤖 Grow Labs - Sanatorio Argentino`;
 
   return mensaje;

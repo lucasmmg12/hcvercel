@@ -2401,7 +2401,7 @@ function generarComunicacionesOptimizadas(
       urgencia: "ALTA",
       errores: erroresAdmision,
       mensaje:
-        "Se detectaron errores en los datos de admisión del paciente. Completar antes del envío a OSDE.",
+        "Se detectaron errores en los datos de admisión del paciente. Completar antes del envío a la Obra Social.",
     });
   }
 
@@ -2456,7 +2456,7 @@ function generarComunicacionesOptimizadas(
       urgencia: "CRÍTICA",
       errores: erroresAltaMedica.filter((e) => /alta/i.test(e)),
       mensaje:
-        "Se detectó ausencia de alta médica. Completar antes del envío a OSDE.",
+        "Se detectó ausencia de alta médica. Completar antes del envío a la Obra Social.",
     });
   }
 
@@ -2525,7 +2525,7 @@ function generarComunicacionesOptimizadas(
       urgencia: "CRÍTICA",
       errores: ["Se utilizó bisturí armónico"],
       mensaje:
-        "Se detectó uso de BISTURÍ ARMÓNICO. Verificar autorización de OSDE previa a facturación.",
+        "Se detectó uso de BISTURÍ ARMÓNICO. Verificar autorización de la Obra Social previa a facturación.",
     });
   }
 
@@ -2548,7 +2548,7 @@ function generarComunicacionesOptimizadas(
           .map(
             (e) => `[Imagenes] ${e.tipo}${e.fecha ? ` (${e.fecha})` : ""}`
           ),
-        mensaje: `Faltan informes en: ${list("Imagenes")}. Adjuntar antes del envío a OSDE.`,
+        mensaje: `Faltan informes en: ${list("Imagenes")}. Adjuntar antes del envío a la Obra Social.`,
       });
     }
     if (sinInforme.some((e) => e.categoria === "Laboratorio")) {

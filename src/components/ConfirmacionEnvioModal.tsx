@@ -74,7 +74,7 @@ export function ConfirmacionEnvioModal({
 
   const construirPreview = () => {
     const urgenciaEmoji = comunicacion.urgencia === 'CRÍTICA' ? '🚨' :
-                          comunicacion.urgencia === 'ALTA' ? '⚠️' : '📋';
+      comunicacion.urgencia === 'ALTA' ? '⚠️' : '📋';
 
     let preview = `${urgenciaEmoji} NOTIFICACIÓN DE AUDITORÍA MÉDICA ${urgenciaEmoji}\n\n`;
     preview += `👤 Responsable: ${comunicacion.responsable}\n`;
@@ -99,7 +99,7 @@ export function ConfirmacionEnvioModal({
     }
 
     preview += `📝 Acción Requerida:\n${comunicacion.mensaje}\n\n`;
-    preview += `⚕️ Importante: Es necesario completar esta corrección antes del envío a OSDE para evitar débitos en la facturación.\n\n`;
+    preview += `⚕️ Importante: Es necesario completar esta corrección antes del envío a la Obra Social para evitar débitos en la facturación.\n\n`;
     preview += `🤖 Automatización realizada por Grow Labs\n`;
     preview += `Sanatorio Argentino - Sistema Salus`;
 
@@ -143,9 +143,8 @@ export function ConfirmacionEnvioModal({
                 />
               </label>
               <p
-                className={`text-xs ${
-                  numeroValido ? 'text-green-700' : 'text-orange-600'
-                }`}
+                className={`text-xs ${numeroValido ? 'text-green-700' : 'text-orange-600'
+                  }`}
               >
                 {advertenciaNumero}
               </p>
