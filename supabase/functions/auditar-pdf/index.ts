@@ -1722,9 +1722,8 @@ function analizarFojaQuirurgica(texto: string): ResultadosFoja {
     let count = 0;
     for (const r of estosIndicadores(indicadores, texto)) if (r) count++;
     if (count < 2) {
-      resultados.errores_generales.push(
-        "❌ CRÍTICO: No se encontró foja quirúrgica en el documento"
-      );
+      // NOTA: No es un error crítico - simplemente no hubo cirugía
+      // Devolvemos resultados vacíos sin errores
       return resultados;
     }
   }
@@ -2069,12 +2068,9 @@ function analizarFojaQuirurgica(texto: string): ResultadosFoja {
     }
   }
 
-  // Si no se encontró ninguna foja válida pero había ocurrencias, agregar error
-  if (resultados.fojas.length === 0 && ocurrenciasFiltradas.length > 0) {
-    resultados.errores_generales.push(
-      "⚠️ ADVERTENCIA: Se encontraron menciones de 'foja quirúrgica' pero ninguna tiene Anestesista o equipo quirúrgico completo dentro de los próximos 4000 caracteres"
-    );
-  }
+  // Si no se encontró ninguna foja válida pero había ocurrencias
+  // NOTA: No generamos advertencia - puede ser que simplemente no hubo cirugía
+  // o que las menciones sean contextuales sin implicar una cirugía real
 
   return resultados;
 }
