@@ -56,7 +56,7 @@ function construirMensajeWhatsApp(
     mensaje += `\n`;
   }
 
-  mensaje += `🩺 *Acción:* Completar correcciones antes del envío a OSDE para evitar débitos.\n\n`;
+  mensaje += `🩺 *Acción:* Completar correcciones antes del envío a la Obra Social para evitar débitos.\n\n`;
   mensaje += `🤖 Grow Labs - Sanatorio Argentino`;
 
   return mensaje;
@@ -88,7 +88,7 @@ Deno.serve(async (req: Request) => {
     });
     console.log('[VALIDACION] Comunicacion completa:', JSON.stringify(requestData.comunicacion, null, 2));
     console.log('[VALIDACION] Datos paciente completos:', JSON.stringify(requestData.datosPaciente, null, 2));
-    
+
     const {
       comunicacion,
       datosPaciente,
@@ -238,7 +238,7 @@ Deno.serve(async (req: Request) => {
       } catch {
         console.error('[ERROR] No se pudo parsear el error como JSON');
       }
-      
+
       if (auditoriaId && comunicacionIndex !== undefined) {
         const errorData = {
           payload_enviado: JSON.stringify(builderbotPayload),
@@ -294,8 +294,8 @@ Deno.serve(async (req: Request) => {
     }
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
+      JSON.stringify({
+        success: true,
         mensaje: 'Mensaje enviado exitosamente por WhatsApp',
         builderbotResponse: builderbotResult
       }),
