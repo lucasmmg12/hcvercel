@@ -148,9 +148,21 @@ export function InformeAuditoria({ resultado, auditoriaId }: { resultado: Result
     setEnviando(true);
     try {
       const com = resultado.comunicaciones[comunicacionSeleccionada];
-      await enviarMensajeWhatsApp(numeroDestino, com.mensaje);
-      setNotification({ type: 'success', message: 'Mensaje enviado correctamente' });
-      setModalConfirmacionAbierto(false);
+      const result = await enviarMensajeWhatsApp({
+        comunicacion: com,
+        datosPaciente: resultado.datosPaciente,
+        nombreArchivo: resultado.nombreArchivo,
+        auditoriaId: auditoriaId,
+        comunicacionIndex: comunicacionSeleccionada,
+        numeroDestino: numeroDestino
+      });
+
+      if (result.success) {
+        setNotification({ type: 'success', message: 'Mensaje enviado correctamente' });
+        setModalConfirmacionAbierto(false);
+      } else {
+        setNotification({ type: 'error', message: result.error || 'Error al enviar mensaje' });
+      }
     } catch (error) {
       setNotification({ type: 'error', message: 'Error al enviar mensaje' });
     } finally {
