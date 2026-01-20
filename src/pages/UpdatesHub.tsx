@@ -14,6 +14,60 @@ type UpdateRow = {
 // Datos históricos generados automáticamente desde Git Log
 const GIT_COMMITS: UpdateRow[] = [
   {
+    id: '8',
+    hash: 'e127d61',
+    title: 'Corrección de Comunicación Frontend-WhatsApp',
+    content_md: 'Se corrigió un error crítico en la llamada al servicio de WhatsApp donde los argumentos se enviaban de forma incorrecta. Ahora los mensajes se envían con el payload completo requerido por Builderbot y se mejoró el manejo de errores en el frontend.',
+    tags: ['fix', 'whatsapp', 'frontend'],
+    status: 'publicado',
+    created_at: '2026-01-20T11:39:49-03:00'
+  },
+  {
+    id: '9',
+    hash: 'a678dcc',
+    title: 'Mejora Visual: Texto de Vista Previa',
+    content_md: 'Se ajustó el color del texto en la vista previa del mensaje a negro (#000000) para garantizar una legibilidad óptima sobre el fondo claro del contenedor.',
+    tags: ['style', 'ui', 'ux'],
+    status: 'publicado',
+    created_at: '2026-01-20T11:32:15-03:00'
+  },
+  {
+    id: '10',
+    hash: '22158da',
+    title: 'Ajustes Finales en Mensajería Genérica',
+    content_md: 'Sincronización final de todas las plantillas de mensaje y validaciones para asegurar consistencia en la comunicación con las obras sociales.',
+    tags: ['chore', 'whatsapp', 'sync'],
+    status: 'publicado',
+    created_at: '2026-01-20T11:28:52-03:00'
+  },
+  {
+    id: '11',
+    hash: '5a70a1c',
+    title: 'Universalización en Edge Function',
+    content_md: 'Actualización de la Edge Function "enviar-whatsapp" para utilizar terminología genérica (la Obra Social) en lugar de marcas específicas, permitiendo auditar casos de cualquier prestador.',
+    tags: ['fix', 'backend', 'whatsapp'],
+    status: 'publicado',
+    created_at: '2026-01-20T11:19:02-03:00'
+  },
+  {
+    id: '12',
+    hash: '3569d98',
+    title: 'Reemplazo Global de Marca OSDE',
+    content_md: 'Se eliminaron todas las referencias hardcodeadas a OSDE en el frontend y backend. El sistema ahora utiliza "la Obra Social" como término estándar en todas las comunicaciones y reportes.',
+    tags: ['fix', 'refactor', 'branding'],
+    status: 'publicado',
+    created_at: '2026-01-20T11:13:31-03:00'
+  },
+  {
+    id: '13',
+    hash: '83e9ec8',
+    title: 'Flexibilización de Auditoría Quirúrgica',
+    content_md: 'Cambio arquitectónico en el motor de auditoría: la ausencia de foja quirúrgica ya no se considera un error crítico si no se detecta actividad quirúrgica en el documento. Esto permite procesar internaciones clínicas correctamente.',
+    tags: ['fix', 'audit', 'logic'],
+    status: 'publicado',
+    created_at: '2026-01-20T11:11:04-03:00'
+  },
+  {
     id: '1',
     hash: 'a3dbd1c',
     title: 'Actualización de Documentación: Nuevas Funcionalidades',
