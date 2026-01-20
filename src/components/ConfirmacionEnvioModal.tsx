@@ -159,7 +159,7 @@ export function ConfirmacionEnvioModal({
 
           <div>
             <h3 className="font-semibold text-gray-900 mb-2">Vista Previa del Mensaje:</h3>
-            <div className="bg-gray-50 border border-gray-300 rounded-lg p-4 whitespace-pre-wrap text-sm font-mono max-h-96 overflow-y-auto">
+            <div className="bg-gray-50 border border-gray-300 rounded-lg p-4 whitespace-pre-wrap text-sm font-mono max-h-96 overflow-y-auto text-black">
               {construirPreview()}
             </div>
           </div>
