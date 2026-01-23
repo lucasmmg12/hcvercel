@@ -1446,21 +1446,48 @@ function detectarEndoscopias(texto: string): FojaEndoscopia[] {
       const claveUnica = `${nombre}-${match.index}`;
       if (procedimientosEncontrados.has(claveUnica)) continue;
 
-      // Extraer bloque de contexto (2000 caracteres después del match)
-      const inicioBloque = Math.max(0, match.index - 200);
+      // Extraer bloque de contexto (ampliado hacia atrás para encontrar fecha de Foja)
+      const inicioBloque = Math.max(0, match.index - 3000);
       const finBloque = Math.min(texto.length, match.index + 2000);
       const bloque = texto.substring(inicioBloque, finBloque);
 
       // Verificar que realmente sea una foja de endoscopía (no solo mención)
-      const esFojaEndoscopia = /(?:foja|hoja|informe).*(?:endoscop|procedimiento)/i.test(bloque) ||
-        /(?:endoscopista|hallazgos|biopsias)/i.test(bloque);
+      // Buscamos indicadores cerca del match (en un rango menor) para no confundir con otras fojas
+      const contextoCercano = texto.substring(Math.max(0, match.index - 500), Math.min(texto.length, match.index + 500));
+      const esFojaEndoscopia = /(?:foja|hoja|informe).*(?:endoscop|procedimiento)/i.test(contextoCercano) ||
+        /(?:endoscopista|hallazgos|biopsias)/i.test(contextoCercano);
 
       if (!esFojaEndoscopia) continue;
 
-      // Extraer fecha (buscar cerca del procedimiento)
-      const fechaMatch = bloque.match(/(?:fecha|realizado)[:\s]*(\d{1,2}\/\d{1,2}\/\d{2,4})/i) ||
-        bloque.match(/(\d{1,2}\/\d{1,2}\/\d{4})/);
-      const fecha = fechaMatch ? fechaMatch[1] : '';
+      // Extraer fecha (buscar con prioridad en etiquetas explícitas)
+      const patronesFecha = [
+        /(?:fecha|realizado|f\.)[:\s]*(\d{1,2}\/\d{1,2}\/\d{2,4})/i, // Fecha: 15/01/2026
+        /\b(\d{1,2}\/\d{1,2}\/\d{4})\b/, // 15/01/2026 (solo)
+        /visita[:\s]*(\d{1,2}\/\d{1,2}\/\d{2,4})/i // Visita: 15/01/2026
+      ];
+
+      let fecha = '';
+
+      // Intentar encontrar una fecha válida
+      for (const p of patronesFecha) {
+        // Buscar todas las ocurrencias y tomar la más cercana al procedimiento (pero anterior o muy cercana)
+        const matches = [...bloque.matchAll(new RegExp(p, 'gi'))];
+
+        // Filtrar fechas inválidas (ej: me 00)
+        const fechasValidas = matches.filter(m => {
+          const parts = m[1].split('/');
+          const d = parseInt(parts[0], 10);
+          const mon = parseInt(parts[1], 10);
+          return d >= 1 && d <= 31 && mon >= 1 && mon <= 12;
+        });
+
+        if (fechasValidas.length > 0) {
+          // Tomamos la última encontrada en el bloque (asumiendo que es la más cercana al header de la foja actual)
+          // ya que el bloque va desde -3000 hasta +2000, la fecha de la foja debería estar antes del procedimiento
+          fecha = fechasValidas[fechasValidas.length - 1][1];
+          break;
+        }
+      }
 
       // Extraer horas
       const horaInicioMatch = bloque.match(/hora\s+inicio[:\s]*(\d{1,2}:\d{2})/i);

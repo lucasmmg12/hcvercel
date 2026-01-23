@@ -14,7 +14,8 @@ import {
   FileText,
   AlertTriangle,
   Loader2,
-  CheckCircle2
+  CheckCircle2,
+  MessageCircle
 } from 'lucide-react';
 import { generateAuditPDF, ResultadoAuditoria } from '../utils/pdfGenerator';
 import { enviarMensajeWhatsApp } from '../services/whatsappService';
@@ -121,6 +122,8 @@ export function InformeAuditoria({ resultado, auditoriaId }: { resultado: Result
   const [enviando, setEnviando] = useState(false);
   const [notification, setNotification] = useState<any>(null);
 
+  const [adHocComunicacion, setAdHocComunicacion] = useState<any | null>(null);
+
   const totalErrores = resultado.totalErrores || 0;
   const estadoGeneral = totalErrores === 0 ? 'success' : totalErrores > 5 ? 'error' : 'warning';
 
@@ -139,27 +142,46 @@ export function InformeAuditoria({ resultado, auditoriaId }: { resultado: Result
 
   const abrirModalEnvio = (idx: number) => {
     setComunicacionSeleccionada(idx);
+    setAdHocComunicacion(null);
+    setModalConfirmacionAbierto(true);
+  };
+
+  const abrirModalAdHoc = (dia: any) => {
+    const nuevaComunicacion = {
+      sector: 'Auditoría Médica - Terapia',
+      responsable: 'Médico a Cargo',
+      motivo: 'Discrepancia en Criterios de Terapia',
+      urgencia: 'ALTA',
+      errores: [],
+      mensaje: `Se solicita revisión del día ${dia.fecha}. La justificación actual "${dia.justificacion}" no cumple con los criterios clínicos suficientes para la categoría asignada. Por favor, justificar o corregir.`
+    };
+    setAdHocComunicacion(nuevaComunicacion);
+    setComunicacionSeleccionada(null);
     setModalConfirmacionAbierto(true);
   };
 
   const handleConfirmarEnvio = async () => {
-    if (comunicacionSeleccionada === null) return;
+    if (comunicacionSeleccionada === null && adHocComunicacion === null) return;
 
     setEnviando(true);
     try {
-      const com = resultado.comunicaciones[comunicacionSeleccionada];
+      const com = adHocComunicacion || resultado.comunicaciones[comunicacionSeleccionada!];
+      const index = adHocComunicacion ? -1 : comunicacionSeleccionada!; // -1 para mensajes ad-hoc
+
       const result = await enviarMensajeWhatsApp({
         comunicacion: com,
         datosPaciente: resultado.datosPaciente,
         nombreArchivo: resultado.nombreArchivo,
         auditoriaId: auditoriaId,
-        comunicacionIndex: comunicacionSeleccionada,
+        comunicacionIndex: index,
         numeroDestino: numeroDestino
       });
 
       if (result.success) {
         setNotification({ type: 'success', message: 'Mensaje enviado correctamente' });
         setModalConfirmacionAbierto(false);
+        setAdHocComunicacion(null);
+        setComunicacionSeleccionada(null);
       } else {
         setNotification({ type: 'error', message: result.error || 'Error al enviar mensaje' });
       }
@@ -195,7 +217,7 @@ export function InformeAuditoria({ resultado, auditoriaId }: { resultado: Result
           ></div>
 
           <div className="relative z-10">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-start justify-between mb-4">
               <div>
                 <h1 className="text-3xl font-bold mb-2">
                   <span className="bg-gradient-to-r from-green-400 to-emerald-300 bg-clip-text text-transparent">
@@ -204,7 +226,15 @@ export function InformeAuditoria({ resultado, auditoriaId }: { resultado: Result
                 </h1>
                 <p className="text-gray-300">{resultado.nombreArchivo}</p>
               </div>
-              <StatusBadge status={estadoGeneral} />
+              <div className="flex flex-col items-end gap-2">
+                <StatusBadge status={estadoGeneral} />
+                {resultado.pacienteInternado && (
+                  <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-300 text-sm font-medium shadow-[0_0_10px_rgba(59,130,246,0.2)] animate-pulse">
+                    <Activity className="w-3 h-3" />
+                    Paciente Internado
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="flex gap-3">
@@ -290,15 +320,31 @@ export function InformeAuditoria({ resultado, auditoriaId }: { resultado: Result
 
             <div className="space-y-2">
               <h3 className="font-semibold text-gray-800 mb-3">Clasificación Diaria</h3>
-              {resultado.resultadoTerapia.clasificacionPorDia?.map((dia: any, idx: number) => (
-                <div key={idx} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                  <div className={`w-3 h-3 rounded-full ${dia.clasificacion === 'terapia_intensiva' ? 'bg-red-500' :
-                    dia.clasificacion === 'terapia_intermedia' ? 'bg-orange-500' : 'bg-blue-500'
-                    }`} />
-                  <span className="font-semibold text-gray-700 w-28">{dia.fecha}</span>
-                  <span className="flex-1 text-sm text-gray-600">{dia.justificacion}</span>
-                </div>
-              ))}
+              {resultado.resultadoTerapia.clasificacionPorDia?.map((dia: any, idx: number) => {
+                const noCumpleCriterios = dia.justificacion.toLowerCase().includes('no cumple') ||
+                  dia.justificacion.toLowerCase().includes('no respeta');
+
+                return (
+                  <div key={idx} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg group">
+                    <div className={`w-3 h-3 rounded-full ${dia.clasificacion === 'terapia_intensiva' ? 'bg-red-500' :
+                      dia.clasificacion === 'terapia_intermedia' ? 'bg-orange-500' : 'bg-blue-500'
+                      }`} />
+                    <span className="font-semibold text-gray-700 w-28">{dia.fecha}</span>
+                    <span className="flex-1 text-sm text-gray-600">{dia.justificacion}</span>
+
+                    {/* Botón WhatsApp Ad-Hoc */}
+                    {noCumpleCriterios && (
+                      <button
+                        onClick={() => abrirModalAdHoc(dia)}
+                        className="p-2 bg-green-100 text-green-600 rounded-full hover:bg-green-500 hover:text-white transition-all transform hover:scale-110 shadow-sm opacity-80 hover:opacity-100"
+                        title="Enviar reclamo por WhatsApp"
+                      >
+                        <MessageCircle className="w-5 h-5" />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </CollapsibleSection>
         )}
@@ -443,12 +489,12 @@ export function InformeAuditoria({ resultado, auditoriaId }: { resultado: Result
 
       {/* Modal de Confirmación */}
       {
-        comunicacionSeleccionada !== null && (
+        (comunicacionSeleccionada !== null || adHocComunicacion !== null) && (
           <ConfirmacionEnvioModal
             isOpen={modalConfirmacionAbierto}
             onClose={() => setModalConfirmacionAbierto(false)}
             onConfirm={handleConfirmarEnvio}
-            comunicacion={resultado.comunicaciones[comunicacionSeleccionada]}
+            comunicacion={adHocComunicacion || resultado.comunicaciones[comunicacionSeleccionada!]}
             datosPaciente={resultado.datosPaciente}
             nombreArchivo={resultado.nombreArchivo}
             isLoading={enviando}
