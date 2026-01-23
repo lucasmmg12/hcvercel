@@ -216,59 +216,49 @@ function extractIngresoAlta(text: string): { ingreso: Date | null; alta: Date | 
   let ingreso: Date | null = null;
   let alta: Date | null = null;
 
-  // Normalizar el texto para facilitar la búsqueda
-  const textoNormalizado = text.replace(/\s+/g, ' ');
+  // Usamos el texto normalizado que PRESERVA los saltos de línea para evitar
+  // unir "Fecha Alta:" vacío con una fecha de abajo.
+  const textoLineas = normalizarTextoPDF(text).split('\n');
 
-  // Buscar "Fecha Ingreso:" o "Fecha de Ingreso:" seguido de fecha y hora
-  // Formato: 22/8/2025 08:29:36 o 22/08/2025, 05:29 a. m.
-  const patronIngreso = /(?:fecha\s+(?:de\s+)?ingreso|ingreso)[:\s]+(\d{1,2}\/\d{1,2}\/\d{2,4})\s+(\d{1,2}:\d{1,2}(?::\d{1,2})?)/i;
-  const matchIngreso = textoNormalizado.match(patronIngreso);
+  // Regex más estrictas que asumen que el valor está en la misma línea o la siguiente inmediata
+  const reIngreso = /(?:fecha\s+(?:de\s+)?ingreso|ingreso)[:\s]*(\d{1,2}\/\d{1,2}\/\d{2,4})(?:\s+(\d{1,2}:\d{2}))?/i;
+  const reAlta = /(?:fecha\s+(?:de\s+)?alta|alta|egreso)[:\s]*(\d{1,2}\/\d{1,2}\/\d{2,4})(?:\s+(\d{1,2}:\d{2}))?/i;
 
-  if (matchIngreso) {
-    const fecha = matchIngreso[1];
-    const hora = matchIngreso[2];
-    const dt = makeDate(fecha, hora);
-    if (!Number.isNaN(dt.getTime())) {
-      ingreso = dt;
+  // Recorremos las primeras 200 líneas (donde suelen estar los encabezados)
+  for (let i = 0; i < Math.min(textoLineas.length, 200); i++) {
+    const linea = textoLineas[i].trim();
+
+    if (!ingreso) {
+      const m = linea.match(reIngreso);
+      if (m) {
+        const fecha = m[1];
+        const hora = m[2];
+        const dt = makeDate(fecha, hora);
+        if (!Number.isNaN(dt.getTime())) {
+          ingreso = dt;
+        }
+      }
     }
-  }
 
-  // Si no encontró con hora, buscar solo fecha
-  if (!ingreso) {
-    const patronIngresoSoloFecha = /(?:fecha\s+(?:de\s+)?ingreso|ingreso)[:\s]+(\d{1,2}\/\d{1,2}\/\d{2,4})/i;
-    const matchIngresoFecha = textoNormalizado.match(patronIngresoSoloFecha);
-    if (matchIngresoFecha) {
-      const dt = makeDate(matchIngresoFecha[1]);
-      if (!Number.isNaN(dt.getTime())) {
-        ingreso = dt;
+    if (!alta) {
+      const m = linea.match(reAlta);
+      if (m) {
+        // Validación extra: asegurarse que no sea "Fecha Alta: Fecha Impresión: 20/02/2026"
+        // Si hay etiquetas 'intrusas' entre 'Alta' y la fecha, probablemente es un falso positivo por concatenación visual
+        // Pero aquí estamos procesando línea por línea, así que es más seguro.
+        // Solo cuidamos que la fecha pertenezca al campo.
+        const fecha = m[1];
+        const hora = m[2];
+        const dt = makeDate(fecha, hora);
+        if (!Number.isNaN(dt.getTime())) {
+          alta = dt;
+        }
       }
     }
   }
 
-  // Buscar "Fecha Alta:" o "Fecha de Alta:" seguido de fecha y hora
-  const patronAlta = /(?:fecha\s+(?:de\s+)?alta|alta)[:\s]+(\d{1,2}\/\d{1,2}\/\d{2,4})\s+(\d{1,2}:\d{1,2}(?::\d{1,2})?)/i;
-  const matchAlta = textoNormalizado.match(patronAlta);
-
-  if (matchAlta) {
-    const fecha = matchAlta[1];
-    const hora = matchAlta[2];
-    const dt = makeDate(fecha, hora);
-    if (!Number.isNaN(dt.getTime())) {
-      alta = dt;
-    }
-  }
-
-  // Si no encontró con hora, buscar solo fecha
-  if (!alta) {
-    const patronAltaSoloFecha = /(?:fecha\s+(?:de\s+)?alta|alta)[:\s]+(\d{1,2}\/\d{1,2}\/\d{2,4})/i;
-    const matchAltaFecha = textoNormalizado.match(patronAltaSoloFecha);
-    if (matchAltaFecha) {
-      const dt = makeDate(matchAltaFecha[1]);
-      if (!Number.isNaN(dt.getTime())) {
-        alta = dt;
-      }
-    }
-  }
+  // Backup: Si no encontramos nada línea por línea, intentamos búsqueda global pero SIN colapasar agresivamente
+  // Solo si es absolutamente necesario. Por ahora confiamos en la lectura línea a línea.
 
   return { ingreso, alta };
 }

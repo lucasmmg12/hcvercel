@@ -37,7 +37,7 @@ function construirMensajeWhatsApp(
   datosPaciente: DatosPaciente,
   nombreArchivo: string
 ): string {
-  let mensaje = `🩺 *PRUEBA: NOTIFICACIÓN MÉDICA - Sistema de Auditoría*\n\n`;
+  let mensaje = `🩺 *NOTIFICACIÓN MÉDICA - Sistema de Auditoría*\n\n`;
   mensaje += `🏥 *Sector:* ${comunicacion.sector}\n`;
   mensaje += `👤 *Responsable:* ${comunicacion.responsable}\n`;
   mensaje += `⚠️ *Urgencia:* ${comunicacion.urgencia}\n\n`;
