@@ -398,13 +398,16 @@ export function AuditarPDF() {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {resultado.listaDiasInternacion.map((dia, idx) => {
                       const esDiaAdmision = idx === 0;
-                      const esDiaAlta = idx === resultado.listaDiasInternacion!.length - 1;
+                      const esUltimoDia = idx === resultado.listaDiasInternacion!.length - 1;
+                      const esDiaAlta = esUltimoDia && !resultado.pacienteInternado;
+
                       return (
                         <tr key={dia.fecha} className={!dia.tieneEvolucion && !esDiaAdmision && !esDiaAlta ? 'bg-red-50' : ''}>
                           <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
                             {dia.fecha}
                             {esDiaAdmision && <span className="ml-2 text-xs text-gray-500">(Admisión)</span>}
                             {esDiaAlta && <span className="ml-2 text-xs text-gray-500">(Alta)</span>}
+                            {esUltimoDia && resultado.pacienteInternado && <span className="ml-2 text-xs text-blue-500">(Hoy)</span>}
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap text-sm">
                             {esDiaAdmision ? (
