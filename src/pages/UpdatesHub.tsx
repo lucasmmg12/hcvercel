@@ -14,6 +14,42 @@ type UpdateRow = {
 // Datos históricos generados automáticamente desde Git Log
 const GIT_COMMITS: UpdateRow[] = [
   {
+    id: '17',
+    hash: 'e547b8d',
+    title: 'UX: Claridad en Estados de Internación',
+    content_md: 'Mejora visual en la tabla de días de internación: se reemplazó la etiqueta "(Alta)" por "(Hoy)" cuando el paciente continúa internado, evitando confusiones sobre su estado actual. Se ajustó la lógica de detección de fechas de alta para prevenir falsos positivos por saltos de línea en el PDF.',
+    tags: ['ui', 'ux', 'fix'],
+    status: 'publicado',
+    created_at: '2026-01-23T17:58:30-03:00'
+  },
+  {
+    id: '16',
+    hash: '53f95c9',
+    title: 'Notificaciones WhatsApp y Endoscopía',
+    content_md: 'Se eliminó la etiqueta de prueba en los mensajes salientes para producción. Se optimizó el algoritmo de lectura OCR en fojas de endoscopía, ampliando el contexto de búsqueda para localizar fechas en encabezados distantes.',
+    tags: ['whatsapp', 'backend', 'ocr'],
+    status: 'publicado',
+    created_at: '2026-01-23T17:48:36-03:00'
+  },
+  {
+    id: '15',
+    hash: 'bce62f1',
+    title: 'Módulo de Auditoría de Terapia Ad-Hoc',
+    content_md: 'Implementación de reportes directos para días de terapia con discrepancias: ahora los auditores pueden enviar reclamos específicos por día vía WhatsApp. Se integró la validación de "Paciente Internado" en el header del reporte.',
+    tags: ['feat', 'terapia', 'whatsapp'],
+    status: 'publicado',
+    created_at: '2026-01-23T17:42:00-03:00'
+  },
+  {
+    id: '14',
+    hash: 'f3f3bcb',
+    title: 'Validación Estricta de Equipo Quirúrgico',
+    content_md: 'Se robusteció la detección de duplicados en fojas quirúrgicas comparando la composición exacta del equipo médico (Cirujano, Anestesista, Ayudantes). Esto previene la fusión errónea de cirugías distintas realizadas en fechas cercanas.',
+    tags: ['fix', 'backend', 'logic'],
+    status: 'publicado',
+    created_at: '2026-01-23T17:35:00-03:00'
+  },
+  {
     id: '8',
     hash: 'e127d61',
     title: 'Corrección de Comunicación Frontend-WhatsApp',
