@@ -14,6 +14,15 @@ type UpdateRow = {
 // Datos históricos generados automáticamente desde Git Log
 const GIT_COMMITS: UpdateRow[] = [
   {
+    id: '18',
+    hash: '7b05057',
+    title: 'PDF: Detalle de Niveles de Cuidado y Criterios',
+    content_md: 'Se incorporó una nueva sección al reporte PDF que detalla la estancia por sectores (UTI/UCE/Piso) y el cumplimiento de criterios médicos día por día. Incluye indicadores visuales (SÍ/NO) y justificaciones técnicas para una auditoría más ágil y profesional.',
+    tags: ['pdf', 'feat', 'audit'],
+    status: 'publicado',
+    created_at: '2026-01-28T20:40:00-03:00'
+  },
+  {
     id: '17',
     hash: 'e547b8d',
     title: 'UX: Claridad en Estados de Internación',
