@@ -295,6 +295,14 @@ export async function generateAuditPDF(resultado: ResultadoAuditoria, downloadPD
   doc.setFont('helvetica', 'bold');
   doc.text(String(resultado.diasHospitalizacion), 15 + kpiWidth + 2.5, kpiY + 13);
 
+  if (resultado.resultadoTerapia?.esTerapia) {
+    doc.setFontSize(7);
+    doc.setTextColor(107, 114, 128);
+    doc.setFont('helvetica', 'normal');
+    const detail = `TI:${resultado.resultadoTerapia.diasTerapiaIntensiva} | TM:${resultado.resultadoTerapia.diasTerapiaIntermedia} | G:${resultado.resultadoTerapia.diasInternacionGeneral}`;
+    doc.text(detail, 15 + kpiWidth + 2.5, kpiY + 16.5);
+  }
+
   // KPI 3: Estado
   doc.setDrawColor(31, 41, 55);
   doc.roundedRect(10 + (kpiWidth + 2.5) * 2, kpiY, kpiWidth, kpiHeight, 2, 2, 'S');
@@ -338,6 +346,91 @@ export async function generateAuditPDF(resultado: ResultadoAuditoria, downloadPD
   });
 
   yPos = (doc as any).lastAutoTable.finalY + 10;
+
+  /* =========================
+     CLASIFICACIÓN DE TERAPIA / NIVELES DE CUIDADO
+     ========================= */
+  if (resultado.resultadoTerapia?.esTerapia) {
+    addSection('CLASIFICACIÓN DE NIVELES DE CUIDADO');
+
+    // Resumen de días por sector
+    const terapiaResumen = [
+      ['Terapia Intensiva:', `${resultado.resultadoTerapia.diasTerapiaIntensiva} días`],
+      ['Terapia Intermedia:', `${resultado.resultadoTerapia.diasTerapiaIntermedia} días`],
+      ['Internación General:', `${resultado.resultadoTerapia.diasInternacionGeneral} días`],
+    ];
+
+    autoTable(doc, {
+      startY: yPos,
+      body: terapiaResumen,
+      theme: 'plain',
+      styles: { fontSize: 10, cellPadding: 2, textColor: COLOR_TEXT_MAIN as any },
+      columnStyles: {
+        0: { fontStyle: 'bold', cellWidth: 40, textColor: COLOR_TEXT_LIGHT as any },
+        1: { cellWidth: 'auto' },
+      },
+      margin: { left: 10, right: 10 },
+    });
+
+    yPos = (doc as any).lastAutoTable.finalY + 8;
+
+    // Detalle diario de clasificación y criterios
+    const terapiaBody = resultado.resultadoTerapia.clasificacionPorDia.map((dia: any) => {
+      const cumpleCriterios = !(dia.justificacion.toLowerCase().includes('no cumple') ||
+        dia.justificacion.toLowerCase().includes('no respeta') ||
+        dia.justificacion.toLowerCase().includes('no amerita') ||
+        (dia.errores && dia.errores.length > 0));
+
+      let sector = '';
+      switch (dia.clasificacion) {
+        case 'terapia_intensiva': sector = 'U.T.I.'; break;
+        case 'terapia_intermedia': sector = 'U.C.E.'; break;
+        case 'internacion_general': sector = 'PISO'; break;
+        case 'no_corresponde_terapia': sector = 'PISO (NC)'; break;
+        default: sector = 'OTRO';
+      }
+
+      return [
+        formatDate(dia.fecha),
+        sector,
+        cumpleCriterios ? 'SÍ' : 'NO',
+        dia.justificacion || '-'
+      ];
+    });
+
+    autoTable(doc, {
+      startY: yPos,
+      head: [['Fecha', 'Sector', 'Cumple Criterios', 'Justificación / Hallazgo']],
+      body: terapiaBody,
+      theme: 'grid',
+      headStyles: {
+        fillColor: COLOR_DARK_BG as any,
+        textColor: 255,
+        fontStyle: 'bold',
+        halign: 'center'
+      },
+      styles: { fontSize: 8, cellPadding: 3, textColor: COLOR_TEXT_MAIN as any },
+      columnStyles: {
+        0: { cellWidth: 25, halign: 'center' },
+        1: { cellWidth: 25, halign: 'center' },
+        2: { cellWidth: 30, halign: 'center', fontStyle: 'bold' },
+        3: { cellWidth: 'auto' },
+      },
+      didParseCell: function (data) {
+        if (data.section === 'body' && data.column.index === 2) {
+          const val = data.cell.raw;
+          if (val === 'NO') {
+            data.cell.styles.textColor = [220, 38, 38];
+          } else {
+            data.cell.styles.textColor = [34, 197, 94];
+          }
+        }
+      },
+      margin: { left: 10, right: 10 },
+    });
+
+    yPos = (doc as any).lastAutoTable.finalY + 15;
+  }
 
   /* =========================
      NUEVO: SECUENCIA DE INTERNACIÓN (DETALLE DÍA A DÍA)
